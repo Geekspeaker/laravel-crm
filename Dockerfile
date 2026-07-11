@@ -1,7 +1,7 @@
 # Krayin CRM — Dockerfile for Northflank (commit at repo ROOT as `Dockerfile`)
 # Build type = Dockerfile · location /Dockerfile · context / · service Port = 8000
 
-FROM php:8.2-cli
+FROM php:8.3-cli
 
 # System deps + PHP extensions Krayin needs (incl. calendar), + Node 20 for the asset build.
 RUN apt-get update && apt-get install -y \

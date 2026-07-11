@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
  && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
  && apt-get install -y nodejs \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install pdo_mysql mbstring bcmath gd zip intl exif pcntl \
+ && docker-php-ext-install pdo_mysql mbstring bcmath gd zip intl exif pcntl calendar \
  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer

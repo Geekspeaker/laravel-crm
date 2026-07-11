@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Behind Northflank/Fastly TLS termination the app receives plain HTTP,
+        // so force HTTPS URL generation in production to avoid mixed-content.
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
     }
 }
+

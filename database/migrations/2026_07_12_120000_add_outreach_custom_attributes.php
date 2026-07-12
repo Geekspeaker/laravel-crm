@@ -47,14 +47,14 @@ return new class extends Migration
 
         foreach ($attributes as $attribute) {
             DB::table('attributes')->insertOrIgnore(array_merge([
-                'lookup_type'     => null,
-                'validation'      => null,
-                'is_required'     => 0,
-                'is_unique'       => 0,
-                'quick_add'       => 0,
+                'lookup_type' => null,
+                'validation' => null,
+                'is_required' => 0,
+                'is_unique' => 0,
+                'quick_add' => 0,
                 'is_user_defined' => 1,
-                'created_at'      => $now,
-                'updated_at'      => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
             ], $attribute));
         }
     }

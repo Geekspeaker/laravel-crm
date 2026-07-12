@@ -33,14 +33,16 @@ class ImportOutreachLeads extends Command
         {--stage=new : Pipeline stage code (new, follow-up, prospect, negotiation, won, lost)}
         {--owner= : Owner user id (defaults to the first/admin user)}
         {--no-ai : Skip the AI header mapping and use deterministic fuzzy matching only}
+        {--update : Refresh existing persons/leads (matched by email) instead of skipping — used to backfill}
         {--dry-run : Parse, map, and report — but write nothing}';
 
     protected $description = 'Smart AI-assisted import of any CSV into Organizations + Persons + Leads.';
 
     /** Canonical fields we map arbitrary headers onto. */
     private array $fields = [
-        'first_name', 'last_name', 'full_name', 'email',
-        'phone', 'job_title', 'company', 'linkedin', 'notes', 'ignore',
+        'first_name', 'last_name', 'full_name', 'email', 'phone',
+        'job_title', 'company', 'linkedin', 'x_handle', 'website',
+        'alt_emails', 'fit_score', 'notes', 'ignore',
     ];
 
     public function handle(
@@ -97,7 +99,10 @@ class ImportOutreachLeads extends Command
 
         $dryRun = (bool) $this->option('dry-run');
 
+        $update = (bool) $this->option('update');
+
         $created = 0;
+        $updated = 0;
         $skipped = 0;
         $errors = 0;
 
@@ -131,38 +136,68 @@ class ImportOutreachLeads extends Command
                     continue;
                 }
 
-                // Idempotency: reuse an existing person by email.
+                // Person social/contact custom-attribute values (only the ones present).
+                $personAttrs = array_filter([
+                    'linkedin' => $data['linkedin'] ?? null,
+                    'x_handle' => $data['x_handle'] ?? null,
+                    'website' => $data['website'] ?? null,
+                    'alt_emails' => $data['alt_emails'] ?? null,
+                ], fn ($v) => ! is_null($v) && $v !== '');
+
+                // Idempotency: reuse an existing person by email; create if absent.
                 $person = Person::whereJsonContains('emails', [['value' => $email]])->first();
 
                 if (! $person) {
-                    $person = $personRepository->create(array_filter([
+                    $person = $personRepository->create(array_filter(array_merge([
                         'name' => $name,
                         'emails' => [['value' => $email, 'label' => 'work']],
                         'job_title' => $title ?: null,
                         'organization_name' => $company ?: null,
                         'user_id' => $ownerId,
                         'entity_type' => 'persons',
-                    ], fn ($v) => ! is_null($v)));
+                    ], $personAttrs), fn ($v) => ! is_null($v)));
+                } elseif ($update && $personAttrs) {
+                    // Backfill: refresh the social fields on an existing person.
+                    $personRepository->update(array_merge($personAttrs, [
+                        'entity_type' => 'persons',
+                        'emails' => [['value' => $email, 'label' => 'work']],
+                        'user_id' => $person->user_id,
+                    ]), $person->id, array_keys($personAttrs));
                 }
 
-                // The person detail view foreach()es contact_numbers, and the model
-                // casts it to array (null stays null). Persons imported without a
-                // phone would store NULL and 500 the lead page — force an empty array.
+                // Persons imported without a phone must store [] (not null), else the
+                // detail view foreach()es null and 500s.
                 if (is_null($person->contact_numbers)) {
                     $person->contact_numbers = [];
                     $person->save();
                 }
 
-                // Skip if this person already has a lead (idempotent re-runs).
-                if (Lead::where('person_id', $person->id)->exists()) {
-                    $skipped++;
+                $existingLead = Lead::where('person_id', $person->id)->first();
+
+                if ($existingLead) {
+                    if ($update) {
+                        // Backfill: clear the old description dump + set fit_score.
+                        $leadData = ['entity_type' => 'leads', 'description' => $data['notes'] ?? ''];
+                        $leadCodes = ['description'];
+
+                        if (! empty($data['fit_score'])) {
+                            $leadData['fit_score'] = $data['fit_score'];
+                            $leadCodes[] = 'fit_score';
+                        }
+
+                        $leadRepository->update($leadData, $existingLead->id, $leadCodes);
+                        $updated++;
+                    } else {
+                        $skipped++;
+                    }
 
                     continue;
                 }
 
                 $leadRepository->create([
                     'title' => $company ? "{$name} - {$company}" : $name,
-                    'description' => $this->buildNotes($data),
+                    'description' => $data['notes'] ?? null,
+                    'fit_score' => $data['fit_score'] ?? null,
                     'lead_value' => 0,
                     'status' => 1,
                     'person_id' => $person->id,
@@ -185,8 +220,8 @@ class ImportOutreachLeads extends Command
         $bar->finish();
         $this->newLine(2);
         $this->info(sprintf(
-            '%sDone. Created: %d | Skipped (no email / already imported): %d | Errors: %d',
-            $dryRun ? '[DRY RUN] ' : '', $created, $skipped, $errors
+            '%sDone. Created: %d | Updated: %d | Skipped: %d | Errors: %d',
+            $dryRun ? '[DRY RUN] ' : '', $created, $updated, $skipped, $errors
         ));
 
         return self::SUCCESS;
@@ -299,7 +334,11 @@ class ImportOutreachLeads extends Command
             'job_title' => ['title', 'jobtitle', 'role', 'position', 'designation'],
             'company' => ['company', 'organization', 'organisation', 'org', 'employer', 'firm', 'account'],
             'linkedin' => ['linkedin', 'linkedinurl', 'li', 'profile'],
-            'notes' => ['notes', 'note', 'description', 'comment', 'comments', 'fitscore', 'fit', 'leadsource', 'leadstatus'],
+            'x_handle' => ['x', 'xhandle', 'twitter', 'twitterhandle', 'twitterurl'],
+            'website' => ['website', 'web', 'url', 'site', 'homepage'],
+            'alt_emails' => ['altemails', 'alternateemails', 'allemails', 'otheremails', 'secondaryemail'],
+            'fit_score' => ['fitscore', 'fit', 'score'],
+            'notes' => ['notes', 'note', 'description', 'comment', 'comments', 'leadsource', 'leadstatus'],
         ];
 
         $result = [];
@@ -341,22 +380,6 @@ class ImportOutreachLeads extends Command
         }
 
         return $data;
-    }
-
-    /**
-     * Build the lead description from linkedin + notes.
-     */
-    private function buildNotes(array $data): string
-    {
-        $parts = [];
-        if (! empty($data['linkedin'])) {
-            $parts[] = 'LinkedIn: '.$data['linkedin'];
-        }
-        if (! empty($data['notes'])) {
-            $parts[] = $data['notes'];
-        }
-
-        return trim(implode("\n", $parts));
     }
 
     /**

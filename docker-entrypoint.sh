@@ -22,45 +22,49 @@ echo "[entrypoint] Writing .env from runtime environment..."
 DB_PREFIX="$(printf '%s' "${DB_PREFIX:-}" | tr -d '"')"
 export DB_PREFIX
 
-# NOTE: every value is wrapped in double quotes. Laravel's dotenv parser rejects
-# unquoted values that contain spaces (e.g. APP_NAME="Skimify CRM"), so quoting is
-# required for any value that may contain a space.
+# IMPORTANT: values are written UNQUOTED except the two that contain spaces
+# (APP_NAME, MAIL_FROM_NAME). Reason: Krayin's installer (krayin-crm:install)
+# parses .env with a naive explode('=') in getEnvAtRuntime() and does NOT strip
+# quotes — so a quoted value like DB_PREFIX="" is read back as the literal two
+# characters "" and used as the table prefix (`""lead_pipeline_stages`), which
+# breaks migrations. Unquoted values keep the installer happy; the two
+# space-containing values still need quotes for Laravel's own dotenv parser.
 cat > /app/.env <<EOF
 APP_NAME="${APP_NAME:-Geekspeaker CRM}"
-APP_ENV="${APP_ENV:-production}"
-APP_KEY="${APP_KEY}"
-APP_DEBUG="${APP_DEBUG:-false}"
-APP_URL="${APP_URL}"
-ASSET_URL="${ASSET_URL:-${APP_URL}}"
-APP_TIMEZONE="${APP_TIMEZONE:-UTC}"
-APP_LOCALE="${APP_LOCALE:-en}"
-APP_CURRENCY="${APP_CURRENCY:-USD}"
+APP_ENV=${APP_ENV:-production}
+APP_KEY=${APP_KEY}
+APP_DEBUG=${APP_DEBUG:-false}
+APP_URL=${APP_URL}
+ASSET_URL=${ASSET_URL:-${APP_URL}}
+APP_TIMEZONE=${APP_TIMEZONE:-UTC}
+APP_LOCALE=${APP_LOCALE:-en}
+APP_CURRENCY=${APP_CURRENCY:-USD}
 
-LOG_CHANNEL="stack"
-LOG_LEVEL="${LOG_LEVEL:-error}"
+LOG_CHANNEL=stack
+LOG_LEVEL=${LOG_LEVEL:-error}
 
-DB_CONNECTION="${DB_CONNECTION:-mysql}"
-DB_HOST="${DB_HOST}"
-DB_PORT="${DB_PORT:-3306}"
-DB_DATABASE="${DB_DATABASE}"
-DB_USERNAME="${DB_USERNAME}"
-DB_PASSWORD="${DB_PASSWORD}"
-DB_PREFIX="${DB_PREFIX}"
-MYSQL_ATTR_SSL_CA="${MYSQL_ATTR_SSL_CA:-/etc/ssl/certs/ca-certificates.crt}"
+DB_CONNECTION=${DB_CONNECTION:-mysql}
+DB_HOST=${DB_HOST}
+DB_PORT=${DB_PORT:-3306}
+DB_DATABASE=${DB_DATABASE}
+DB_USERNAME=${DB_USERNAME}
+DB_PASSWORD=${DB_PASSWORD}
+DB_PREFIX=${DB_PREFIX}
+MYSQL_ATTR_SSL_CA=${MYSQL_ATTR_SSL_CA:-/etc/ssl/certs/ca-certificates.crt}
 
-QUEUE_CONNECTION="${QUEUE_CONNECTION:-database}"
-CACHE_DRIVER="${CACHE_DRIVER:-file}"
-CACHE_STORE="${CACHE_STORE:-file}"
-SESSION_DRIVER="${SESSION_DRIVER:-file}"
-SESSION_LIFETIME="${SESSION_LIFETIME:-120}"
+QUEUE_CONNECTION=${QUEUE_CONNECTION:-database}
+CACHE_DRIVER=${CACHE_DRIVER:-file}
+CACHE_STORE=${CACHE_STORE:-file}
+SESSION_DRIVER=${SESSION_DRIVER:-file}
+SESSION_LIFETIME=${SESSION_LIFETIME:-120}
 
-MAIL_MAILER="${MAIL_MAILER:-log}"
-MAIL_HOST="${MAIL_HOST}"
-MAIL_PORT="${MAIL_PORT}"
-MAIL_USERNAME="${MAIL_USERNAME}"
-MAIL_PASSWORD="${MAIL_PASSWORD}"
-MAIL_ENCRYPTION="${MAIL_ENCRYPTION}"
-MAIL_FROM_ADDRESS="${MAIL_FROM_ADDRESS:-golvis@geekspeaker.com}"
+MAIL_MAILER=${MAIL_MAILER:-log}
+MAIL_HOST=${MAIL_HOST}
+MAIL_PORT=${MAIL_PORT}
+MAIL_USERNAME=${MAIL_USERNAME}
+MAIL_PASSWORD=${MAIL_PASSWORD}
+MAIL_ENCRYPTION=${MAIL_ENCRYPTION}
+MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS:-golvis@geekspeaker.com}
 MAIL_FROM_NAME="${MAIL_FROM_NAME:-Skimify CRM}"
 EOF
 

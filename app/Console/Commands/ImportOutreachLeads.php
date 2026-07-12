@@ -242,7 +242,14 @@ class ImportOutreachLeads extends Command
             ]);
 
             if ($response->failed()) {
-                $this->warn('AI mapping request failed; using fuzzy matching.');
+                $this->warn(sprintf(
+                    'AI mapping failed [HTTP %d] using model "%s" at %s: %s',
+                    $response->status(),
+                    $model,
+                    rtrim($domain, '/').'/chat/completions',
+                    mb_substr(trim($response->body()), 0, 400)
+                ));
+                $this->warn('Falling back to fuzzy matching.');
 
                 return null;
             }

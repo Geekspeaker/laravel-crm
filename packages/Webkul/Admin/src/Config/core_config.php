@@ -193,6 +193,13 @@ return [
                 'validation' => 'required_if:enable,1',
                 'info' => 'admin::app.configuration.index.magic-ai.settings.api-key-info',
             ], [
+                'name' => 'api_domain',
+                'title' => 'admin::app.configuration.index.magic-ai.settings.api-domain',
+                'type' => 'text',
+                'info' => 'admin::app.configuration.index.magic-ai.settings.api-domain-info',
+                'default' => 'https://api.openai.com/v1',
+                'depends' => 'enable:1',
+            ], [
                 'name' => 'model',
                 'title' => 'admin::app.configuration.index.magic-ai.settings.models.title',
                 'type' => 'select',
@@ -201,22 +208,16 @@ return [
                 'options' => [
                     [
                         'title' => 'admin::app.configuration.index.magic-ai.settings.models.gpt-4o',
-                        'value' => 'openai/chatgpt-4o-latest',
+                        'value' => 'gpt-4o',
                     ], [
                         'title' => 'admin::app.configuration.index.magic-ai.settings.models.gpt-4o-mini',
-                        'value' => 'openai/gpt-4o-mini',
+                        'value' => 'gpt-4o-mini',
                     ], [
-                        'title' => 'admin::app.configuration.index.magic-ai.settings.models.gemini-2-0-flash-001',
-                        'value' => 'google/gemini-2.0-flash-001',
+                        'title' => 'admin::app.configuration.index.magic-ai.settings.models.gpt-4-1',
+                        'value' => 'gpt-4.1',
                     ], [
-                        'title' => 'admin::app.configuration.index.magic-ai.settings.models.deepseek-r1',
-                        'value' => 'deepseek/deepseek-r1-distill-llama-8b',
-                    ], [
-                        'title' => 'admin::app.configuration.index.magic-ai.settings.models.llama-3-2-3b-instruct',
-                        'value' => 'meta-llama/llama-3.2-3b-instruct',
-                    ], [
-                        'title' => 'admin::app.configuration.index.magic-ai.settings.models.grok-2-1212',
-                        'value' => 'x-ai/grok-2-1212',
+                        'title' => 'admin::app.configuration.index.magic-ai.settings.models.gpt-4-1-mini',
+                        'value' => 'gpt-4.1-mini',
                     ],
                 ],
             ], [

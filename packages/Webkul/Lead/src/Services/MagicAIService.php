@@ -8,9 +8,11 @@ use Smalot\PdfParser\Parser;
 class MagicAIService
 {
     /**
-     * API endpoint for OpenRouter AI service.
+     * Default AI API base URL — OpenAI native API.
+     * Overridable via the "API Domain" Magic AI setting (e.g. Azure OpenAI, a
+     * self-hosted OpenAI-compatible gateway, or OpenRouter's base URL).
      */
-    const OPEN_ROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+    const DEFAULT_API_DOMAIN = 'https://api.openai.com/v1';
 
     /**
      * Maximum token limit for AI prompt.
@@ -145,10 +147,14 @@ class MagicAIService
     private static function ask($prompt, $model, $apiKey)
     {
         try {
+            $apiDomain = core()->getConfigData('general.magic_ai.settings.api_domain') ?: self::DEFAULT_API_DOMAIN;
+
+            $url = rtrim($apiDomain, '/').'/chat/completions';
+
             $response = \Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'Authorization' => 'Bearer '.$apiKey,
-            ])->post(self::OPEN_ROUTER_URL, [
+            ])->post($url, [
                 'model' => $model,
                 'messages' => [
                     [

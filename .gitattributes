@@ -9,3 +9,7 @@
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
+
+# Keep shell scripts LF so the Docker entrypoint shebang works on Linux
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf

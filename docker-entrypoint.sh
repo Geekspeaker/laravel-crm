@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Skimify CRM (Krayin on Northflank) container entrypoint.
+# Geekspeaker CRM (Krayin on Northflank) container entrypoint.
 #
 # WHY THIS EXISTS:
 # The image ships a build-time .env (copied from .env.example) with an EMPTY
@@ -14,43 +14,46 @@ set -e
 
 echo "[entrypoint] Writing .env from runtime environment..."
 
+# NOTE: every value is wrapped in double quotes. Laravel's dotenv parser rejects
+# unquoted values that contain spaces (e.g. APP_NAME="Skimify CRM"), so quoting is
+# required for any value that may contain a space.
 cat > /app/.env <<EOF
-APP_NAME=${APP_NAME:-Skimify CRM}
-APP_ENV=${APP_ENV:-production}
-APP_KEY=${APP_KEY}
-APP_DEBUG=${APP_DEBUG:-false}
-APP_URL=${APP_URL}
-ASSET_URL=${ASSET_URL:-${APP_URL}}
-APP_TIMEZONE=${APP_TIMEZONE:-UTC}
-APP_LOCALE=${APP_LOCALE:-en}
-APP_CURRENCY=${APP_CURRENCY:-USD}
+APP_NAME="${APP_NAME:-Geekspeaker CRM}"
+APP_ENV="${APP_ENV:-production}"
+APP_KEY="${APP_KEY}"
+APP_DEBUG="${APP_DEBUG:-false}"
+APP_URL="${APP_URL}"
+ASSET_URL="${ASSET_URL:-${APP_URL}}"
+APP_TIMEZONE="${APP_TIMEZONE:-UTC}"
+APP_LOCALE="${APP_LOCALE:-en}"
+APP_CURRENCY="${APP_CURRENCY:-USD}"
 
-LOG_CHANNEL=stack
-LOG_LEVEL=${LOG_LEVEL:-error}
+LOG_CHANNEL="stack"
+LOG_LEVEL="${LOG_LEVEL:-error}"
 
-DB_CONNECTION=${DB_CONNECTION:-mysql}
-DB_HOST=${DB_HOST}
-DB_PORT=${DB_PORT:-3306}
-DB_DATABASE=${DB_DATABASE}
-DB_USERNAME=${DB_USERNAME}
-DB_PASSWORD=${DB_PASSWORD}
-DB_PREFIX=${DB_PREFIX}
-MYSQL_ATTR_SSL_CA=${MYSQL_ATTR_SSL_CA:-/etc/ssl/certs/ca-certificates.crt}
+DB_CONNECTION="${DB_CONNECTION:-mysql}"
+DB_HOST="${DB_HOST}"
+DB_PORT="${DB_PORT:-3306}"
+DB_DATABASE="${DB_DATABASE}"
+DB_USERNAME="${DB_USERNAME}"
+DB_PASSWORD="${DB_PASSWORD}"
+DB_PREFIX="${DB_PREFIX}"
+MYSQL_ATTR_SSL_CA="${MYSQL_ATTR_SSL_CA:-/etc/ssl/certs/ca-certificates.crt}"
 
-QUEUE_CONNECTION=${QUEUE_CONNECTION:-database}
-CACHE_DRIVER=${CACHE_DRIVER:-file}
-CACHE_STORE=${CACHE_STORE:-file}
-SESSION_DRIVER=${SESSION_DRIVER:-file}
-SESSION_LIFETIME=${SESSION_LIFETIME:-120}
+QUEUE_CONNECTION="${QUEUE_CONNECTION:-database}"
+CACHE_DRIVER="${CACHE_DRIVER:-file}"
+CACHE_STORE="${CACHE_STORE:-file}"
+SESSION_DRIVER="${SESSION_DRIVER:-file}"
+SESSION_LIFETIME="${SESSION_LIFETIME:-120}"
 
-MAIL_MAILER=${MAIL_MAILER:-log}
-MAIL_HOST=${MAIL_HOST}
-MAIL_PORT=${MAIL_PORT}
-MAIL_USERNAME=${MAIL_USERNAME}
-MAIL_PASSWORD=${MAIL_PASSWORD}
-MAIL_ENCRYPTION=${MAIL_ENCRYPTION}
-MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS:-golvis@geekspeaker.com}
-MAIL_FROM_NAME=${MAIL_FROM_NAME:-Skimify CRM}
+MAIL_MAILER="${MAIL_MAILER:-log}"
+MAIL_HOST="${MAIL_HOST}"
+MAIL_PORT="${MAIL_PORT}"
+MAIL_USERNAME="${MAIL_USERNAME}"
+MAIL_PASSWORD="${MAIL_PASSWORD}"
+MAIL_ENCRYPTION="${MAIL_ENCRYPTION}"
+MAIL_FROM_ADDRESS="${MAIL_FROM_ADDRESS:-golvis@geekspeaker.com}"
+MAIL_FROM_NAME="${MAIL_FROM_NAME:-Skimify CRM}"
 EOF
 
 # Safety net: if APP_KEY was not provided as an env var, warn loudly. We do NOT

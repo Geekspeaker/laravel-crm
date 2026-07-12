@@ -145,6 +145,14 @@ class ImportOutreachLeads extends Command
                     ], fn ($v) => ! is_null($v)));
                 }
 
+                // The person detail view foreach()es contact_numbers, and the model
+                // casts it to array (null stays null). Persons imported without a
+                // phone would store NULL and 500 the lead page — force an empty array.
+                if (is_null($person->contact_numbers)) {
+                    $person->contact_numbers = [];
+                    $person->save();
+                }
+
                 // Skip if this person already has a lead (idempotent re-runs).
                 if (Lead::where('person_id', $person->id)->exists()) {
                     $skipped++;

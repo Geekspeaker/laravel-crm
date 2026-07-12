@@ -14,6 +14,14 @@ set -e
 
 echo "[entrypoint] Writing .env from runtime environment..."
 
+# Northflank variables sometimes arrive wrapped in literal quotes (e.g. someone
+# sets DB_PREFIX to "" meaning "empty"). A DB_PREFIX of two quote characters
+# corrupts every table name (`""lead_pipeline_stages`) and breaks migrations.
+# Strip stray double quotes and re-export so both .env AND the child PHP process
+# see a clean value.
+DB_PREFIX="$(printf '%s' "${DB_PREFIX:-}" | tr -d '"')"
+export DB_PREFIX
+
 # NOTE: every value is wrapped in double quotes. Laravel's dotenv parser rejects
 # unquoted values that contain spaces (e.g. APP_NAME="Skimify CRM"), so quoting is
 # required for any value that may contain a space.

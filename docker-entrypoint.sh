@@ -61,6 +61,20 @@ if [ -z "${APP_KEY}" ]; then
   echo "[entrypoint] WARNING: APP_KEY is empty. Set it as a Northflank runtime variable." >&2
 fi
 
+# Ensure the Laravel storage skeleton exists. Critical when a persistent volume is
+# mounted at /app/storage: a fresh volume is EMPTY and would otherwise be missing
+# the framework dirs, crashing the app. Idempotent — safe on every boot.
+echo "[entrypoint] Ensuring storage skeleton..."
+mkdir -p \
+  storage/app/public \
+  storage/framework/cache/data \
+  storage/framework/sessions \
+  storage/framework/views \
+  storage/framework/testing \
+  storage/logs
+chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+php artisan storage:link 2>/dev/null || true
+
 php artisan config:clear
 php artisan package:discover --ansi || true
 

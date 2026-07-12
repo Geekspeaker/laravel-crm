@@ -91,6 +91,9 @@ php artisan package:discover --ansi || true
 
 # Idempotent + additive: only applies pending migrations, never drops data.
 # NEVER change this to migrate:fresh / migrate:refresh / db:wipe.
-php artisan migrate --force
+# Non-fatal: a migration error must NOT crash-loop the web server (that would
+# also block shell access needed to inspect/repair). Serve regardless; check
+# state with `php artisan migrate:status`.
+php artisan migrate --force || echo "[entrypoint] WARNING: migrate --force failed; serving anyway. Inspect with 'php artisan migrate:status'."
 
 exec php artisan serve --host=0.0.0.0 --port=8000

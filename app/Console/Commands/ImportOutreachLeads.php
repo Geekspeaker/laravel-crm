@@ -102,7 +102,7 @@ class ImportOutreachLeads extends Command
         $errors = 0;
 
         $this->newLine();
-        $this->info(($dryRun ? '[DRY RUN] ' : '')."Importing ".count($rows)." rows...");
+        $this->info(($dryRun ? '[DRY RUN] ' : '').'Importing '.count($rows).' rows...');
         $bar = $this->output->createProgressBar(count($rows));
 
         foreach ($rows as $n => $row) {
@@ -114,6 +114,7 @@ class ImportOutreachLeads extends Command
                 $email = strtolower(trim($data['email'] ?? ''));
                 if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -126,6 +127,7 @@ class ImportOutreachLeads extends Command
 
                 if ($dryRun) {
                     $created++;
+
                     continue;
                 }
 
@@ -134,33 +136,34 @@ class ImportOutreachLeads extends Command
 
                 if (! $person) {
                     $person = $personRepository->create(array_filter([
-                        'name'              => $name,
-                        'emails'            => [['value' => $email, 'label' => 'work']],
-                        'job_title'         => $title ?: null,
+                        'name' => $name,
+                        'emails' => [['value' => $email, 'label' => 'work']],
+                        'job_title' => $title ?: null,
                         'organization_name' => $company ?: null,
-                        'user_id'           => $ownerId,
-                        'entity_type'       => 'persons',
+                        'user_id' => $ownerId,
+                        'entity_type' => 'persons',
                     ], fn ($v) => ! is_null($v)));
                 }
 
                 // Skip if this person already has a lead (idempotent re-runs).
                 if (Lead::where('person_id', $person->id)->exists()) {
                     $skipped++;
+
                     continue;
                 }
 
                 $leadRepository->create([
-                    'title'                 => $company ? "{$name} - {$company}" : $name,
-                    'description'           => $this->buildNotes($data),
-                    'lead_value'            => 0,
-                    'status'                => 1,
-                    'person_id'             => $person->id,
-                    'lead_source_id'        => $sourceId,
-                    'lead_type_id'          => $typeId,
-                    'lead_pipeline_id'      => $pipelineId,
-                    'lead_pipeline_stage_id'=> $stageId,
-                    'user_id'               => $ownerId,
-                    'entity_type'           => 'leads',
+                    'title' => $company ? "{$name} - {$company}" : $name,
+                    'description' => $this->buildNotes($data),
+                    'lead_value' => 0,
+                    'status' => 1,
+                    'person_id' => $person->id,
+                    'lead_source_id' => $sourceId,
+                    'lead_type_id' => $typeId,
+                    'lead_pipeline_id' => $pipelineId,
+                    'lead_pipeline_stage_id' => $stageId,
+                    'user_id' => $ownerId,
+                    'entity_type' => 'leads',
                 ]);
 
                 $created++;
@@ -222,15 +225,15 @@ class ImportOutreachLeads extends Command
         $prompt = "Map each CSV column header to exactly one canonical field.\n"
             ."Canonical fields: {$fieldList}.\n"
             ."Use \"ignore\" for anything that does not fit.\n"
-            ."Headers: ".json_encode(array_values($headers))."\n"
-            ."Respond ONLY with a JSON object of {\"header\":\"field\"}.";
+            .'Headers: '.json_encode(array_values($headers))."\n"
+            .'Respond ONLY with a JSON object of {"header":"field"}.';
 
         try {
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer '.$apiKey,
-                'Content-Type'  => 'application/json',
+                'Content-Type' => 'application/json',
             ])->timeout(30)->post(rtrim($domain, '/').'/chat/completions', [
-                'model'    => $model,
+                'model' => $model,
                 'messages' => [
                     ['role' => 'system', 'content' => 'You map spreadsheet headers to fields. Reply with JSON only.'],
                     ['role' => 'user', 'content' => $prompt],
@@ -274,14 +277,14 @@ class ImportOutreachLeads extends Command
     {
         $synonyms = [
             'first_name' => ['first', 'firstname', 'fname', 'givenname'],
-            'last_name'  => ['last', 'lastname', 'lname', 'surname', 'familyname'],
-            'full_name'  => ['name', 'fullname', 'contact', 'contactname', 'person'],
-            'email'      => ['email', 'emails', 'emailaddress', 'mail', 'workemail', 'e'],
-            'phone'      => ['phone', 'phonenumber', 'mobile', 'cell', 'tel', 'contactnumber'],
-            'job_title'  => ['title', 'jobtitle', 'role', 'position', 'designation'],
-            'company'    => ['company', 'organization', 'organisation', 'org', 'employer', 'firm', 'account'],
-            'linkedin'   => ['linkedin', 'linkedinurl', 'li', 'profile'],
-            'notes'      => ['notes', 'note', 'description', 'comment', 'comments', 'fitscore', 'fit', 'leadsource', 'leadstatus'],
+            'last_name' => ['last', 'lastname', 'lname', 'surname', 'familyname'],
+            'full_name' => ['name', 'fullname', 'contact', 'contactname', 'person'],
+            'email' => ['email', 'emails', 'emailaddress', 'mail', 'workemail', 'e'],
+            'phone' => ['phone', 'phonenumber', 'mobile', 'cell', 'tel', 'contactnumber'],
+            'job_title' => ['title', 'jobtitle', 'role', 'position', 'designation'],
+            'company' => ['company', 'organization', 'organisation', 'org', 'employer', 'firm', 'account'],
+            'linkedin' => ['linkedin', 'linkedinurl', 'li', 'profile'],
+            'notes' => ['notes', 'note', 'description', 'comment', 'comments', 'fitscore', 'fit', 'leadsource', 'leadstatus'],
         ];
 
         $result = [];
@@ -352,7 +355,7 @@ class ImportOutreachLeads extends Command
         }
 
         return (int) DB::table('lead_sources')->insertGetId([
-            'name'       => $name,
+            'name' => $name,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

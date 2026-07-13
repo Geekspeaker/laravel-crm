@@ -67,6 +67,15 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 - Person panel on the lead view now surfaces **LinkedIn / Website / X** from the
   contact record.
 
+### Outreach Copilot — thesis-matched opener generator
+- New lead attributes `ai_dossier` + `ai_draft` (migration).
+- `php artisan skimify:draft-opener` — for each lead, builds a short research dossier
+  and a punchy, hook-first opener that connects Skimify's attention-data thesis to the
+  target's segment angle (VC thesis / partner category / HR pain), optionally grounded
+  by a best-effort read of the firm's website. Saved to `ai_dossier`/`ai_draft` for
+  review — never auto-sent. Flags: `--lead`, `--source`, `--stage`, `--limit`,
+  `--force`, `--no-web`. Uses the Magic AI (OpenAI) config.
+
 ### Email automation — relevant-only inbound + threading + auto-sync
 - **Reply-To = From** (`Email.php` Mailable): outgoing mail now replies to the real
   sender mailbox instead of the `@MAIL_DOMAIN` tracking address — replies land in the

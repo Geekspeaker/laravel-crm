@@ -16,8 +16,12 @@ use Webkul\Lead\Repositories\LeadRepository;
  * Token-gated write API for the outreach agent (/api/outreach/*).
  *
  * Two endpoints:
- *   POST /api/outreach/leads/upsert  — create/update Org+Person+Lead (idempotent by email)
+ *   POST /api/outreach/leads/upsert  — create/update Org+Person+Lead
  *   POST /api/outreach/touches       — append an activity + optionally set the stage
+ *
+ * Identity: email is the PRIMARY key. When email is absent we accept an alternate
+ * key so LinkedIn-only contacts can still be logged — a `linkedin` URL, or
+ * `name`(+ first/last) + `company`. We never fabricate a placeholder email.
  *
  * The upsert mirrors `skimify:import-leads` (same repositories + field mapping) so
  * behaviour matches the bulk importer.
@@ -41,21 +45,32 @@ class OutreachApiController extends Controller
         $data = $request->all();
 
         $email = strtolower(trim($data['email'] ?? ''));
-        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return response()->json(['error' => 'invalid_email', 'message' => 'A valid "email" is required.'], 422);
-        }
+        $hasEmail = filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
 
-        $ownerId = DB::table('users')->orderBy('id')->value('id');
-        $name = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? '')) ?: ($data['name'] ?? $email);
+        $linkedin = trim($data['linkedin'] ?? '');
         $company = trim($data['company'] ?? '');
         $title = trim($data['title'] ?? '');
 
+        // Raw (non-synthesized) name, used both for the record and for matching.
+        $rawName = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? '')) ?: trim($data['name'] ?? '');
+
+        // Identity gate: need email OR linkedin OR name+company. Never invent an email.
+        if (! $hasEmail && $linkedin === '' && ! ($rawName !== '' && $company !== '')) {
+            return response()->json([
+                'error'   => 'missing_identifier',
+                'message' => 'Provide a valid "email", or a "linkedin" URL, or "name" (or first/last) + "company".',
+            ], 422);
+        }
+
+        $name = $rawName !== '' ? $rawName : $this->fallbackName($hasEmail, $email, $company, $linkedin);
+
+        $ownerId = DB::table('users')->orderBy('id')->value('id');
         $sourceId = $this->resolveSource($data['source'] ?? 'Direct');
         $pipelineId = 1;
         $stageCode = in_array($data['stage'] ?? '', $this->validStages, true) ? $data['stage'] : 'new';
         $stageId = DB::table('lead_pipeline_stages')->where('lead_pipeline_id', $pipelineId)->where('code', $stageCode)->value('id') ?? 1;
 
-        // ---- Person (create or update) ----
+        // ---- Person (resolve by email → linkedin → name+company, else create) ----
         $personAttrs = [];
         foreach ($this->personAttributeFields as $f) {
             if (! empty($data[$f])) {
@@ -63,33 +78,51 @@ class OutreachApiController extends Controller
             }
         }
 
-        $person = Person::whereJsonContains('emails', [['value' => $email]])->first();
+        $matchedBy = null;
+        $person = $this->resolvePerson($data, $matchedBy);
 
         if (! $person) {
+            $matchedBy = 'created';
+
             $person = $personRepository->create(array_filter(array_merge([
-                'name' => $name,
-                'emails' => [['value' => $email, 'label' => 'work']],
-                'job_title' => $title ?: null,
+                'name'              => $name,
+                'emails'            => $hasEmail ? [['value' => $email, 'label' => 'work']] : [],
+                'job_title'         => $title ?: null,
                 'organization_name' => $company ?: null,
-                'user_id' => $ownerId,
-                'entity_type' => 'persons',
+                'user_id'           => $ownerId,
+                'entity_type'       => 'persons',
             ], $personAttrs), fn ($v) => ! is_null($v)));
-        } elseif ($personAttrs || $title) {
-            $update = array_merge($personAttrs, [
+        } else {
+            // Preserve existing emails; backfill a primary email onto a contact we
+            // first met LinkedIn-only. Never wipe what's already there.
+            $emails = $person->emails ?: [];
+            if ($hasEmail && empty($emails)) {
+                $emails = [['value' => $email, 'label' => 'work']];
+            }
+
+            $update = [
                 'entity_type' => 'persons',
-                'emails' => [['value' => $email, 'label' => 'work']],
-                'user_id' => $person->user_id,
-            ]);
-            $codes = array_keys($personAttrs);
+                'user_id'     => $person->user_id,
+                'emails'      => $emails,
+            ];
+            $codes = [];
+
+            foreach ($personAttrs as $code => $val) {
+                $update[$code] = $val;
+                $codes[] = $code;
+            }
 
             if ($title && empty($person->job_title)) {
                 $update['job_title'] = $title;
                 $codes[] = 'job_title';
             }
 
-            if ($codes) {
-                $personRepository->update($update, $person->id, $codes);
+            // Link an organization if the contact doesn't have one yet.
+            if ($company !== '' && empty($person->organization_id)) {
+                $update['organization_name'] = $company;
             }
+
+            $personRepository->update($update, $person->id, $codes);
         }
 
         if (is_null($person->contact_numbers)) {
@@ -110,16 +143,16 @@ class OutreachApiController extends Controller
 
         if (! $lead) {
             $lead = $leadRepository->create(array_merge([
-                'title' => $company ? "{$name} - {$company}" : $name,
-                'lead_value' => 0,
-                'status' => 1,
-                'person_id' => $person->id,
-                'lead_source_id' => $sourceId,
-                'lead_type_id' => 1,
-                'lead_pipeline_id' => $pipelineId,
+                'title'                  => $company ? "{$name} - {$company}" : $name,
+                'lead_value'             => 0,
+                'status'                 => 1,
+                'person_id'              => $person->id,
+                'lead_source_id'         => $sourceId,
+                'lead_type_id'           => 1,
+                'lead_pipeline_id'       => $pipelineId,
                 'lead_pipeline_stage_id' => $stageId,
-                'user_id' => $ownerId,
-                'entity_type' => 'leads',
+                'user_id'                => $ownerId,
+                'entity_type'            => 'leads',
             ], $leadAttrs));
         } else {
             $update = array_merge($leadAttrs, ['entity_type' => 'leads']);
@@ -136,10 +169,11 @@ class OutreachApiController extends Controller
         }
 
         return response()->json([
-            'action' => $created ? 'created' : 'updated',
-            'lead_id' => $lead->id,
-            'person_id' => $person->id,
-            'stage' => $stageCode,
+            'action'     => $created ? 'created' : 'updated',
+            'lead_id'    => $lead->id,
+            'person_id'  => $person->id,
+            'stage'      => $stageCode,
+            'matched_by' => $matchedBy,
         ]);
     }
 
@@ -147,17 +181,17 @@ class OutreachApiController extends Controller
     {
         $data = $request->all();
 
-        // Resolve the lead by id or by email.
+        // Resolve the lead by id, or by the person (email → linkedin → name+company).
         $lead = null;
         if (! empty($data['lead_id'])) {
             $lead = Lead::find($data['lead_id']);
-        } elseif (! empty($data['email'])) {
-            $person = Person::whereJsonContains('emails', [['value' => strtolower(trim($data['email']))]])->first();
+        } else {
+            $person = $this->resolvePerson($data);
             $lead = $person ? Lead::where('person_id', $person->id)->first() : null;
         }
 
         if (! $lead) {
-            return response()->json(['error' => 'lead_not_found', 'message' => 'No lead matched lead_id/email.'], 404);
+            return response()->json(['error' => 'lead_not_found', 'message' => 'No lead matched lead_id/email/linkedin/name+company.'], 404);
         }
 
         $channel = strtolower(trim($data['channel'] ?? 'note'));
@@ -184,14 +218,14 @@ class OutreachApiController extends Controller
         $ownerId = $lead->user_id ?: DB::table('users')->orderBy('id')->value('id');
 
         $activity = $activityRepository->create([
-            'type' => $type,
-            'title' => '['.ucfirst($channel).' · '.$direction.'] '.$subject,
-            'comment' => $note,
+            'type'          => $type,
+            'title'         => '['.ucfirst($channel).' · '.$direction.'] '.$subject,
+            'comment'       => $note,
             'schedule_from' => $occurredAt,
-            'schedule_to' => $occurredAt,
-            'is_done' => 1,
-            'user_id' => $ownerId,
-            'additional' => json_encode(['channel' => $channel, 'direction' => $direction, 'dedupe' => $dedupe]),
+            'schedule_to'   => $occurredAt,
+            'is_done'       => 1,
+            'user_id'       => $ownerId,
+            'additional'    => json_encode(['channel' => $channel, 'direction' => $direction, 'dedupe' => $dedupe]),
         ]);
 
         $activity->leads()->attach($lead->id);
@@ -207,11 +241,151 @@ class OutreachApiController extends Controller
         }
 
         return response()->json([
-            'action' => 'logged',
+            'action'      => 'logged',
             'activity_id' => $activity->id,
-            'lead_id' => $lead->id,
-            'stage' => $newStage,
+            'lead_id'     => $lead->id,
+            'stage'       => $newStage,
         ]);
+    }
+
+    /**
+     * Resolve a Person from the request payload using, in order: a valid email,
+     * a linkedin URL, then name + company. Sets $matchedBy to the winning key.
+     */
+    private function resolvePerson(array $data, ?string &$matchedBy = null): ?Person
+    {
+        $email = strtolower(trim($data['email'] ?? ''));
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            if ($person = Person::whereJsonContains('emails', [['value' => $email]])->first()) {
+                $matchedBy = 'email';
+
+                return $person;
+            }
+        }
+
+        if (! empty($data['linkedin'])) {
+            if ($person = $this->findPersonByLinkedin((string) $data['linkedin'])) {
+                $matchedBy = 'linkedin';
+
+                return $person;
+            }
+        }
+
+        $name = trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? '')) ?: trim($data['name'] ?? '');
+        $company = trim($data['company'] ?? '');
+
+        if ($name !== '' && $company !== '') {
+            if ($person = $this->findPersonByNameCompany($name, $company)) {
+                $matchedBy = 'name_company';
+
+                return $person;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find a Person by their linkedin custom attribute. Because `linkedin` is an EAV
+     * text attribute (stored in attribute_values.text_value for entity_type
+     * 'persons'), we narrow by the vanity slug then compare on a normalized URL so
+     * trivial differences (scheme, www., trailing slash, case) still match.
+     */
+    private function findPersonByLinkedin(string $linkedin): ?Person
+    {
+        $linkedin = trim($linkedin);
+        if ($linkedin === '') {
+            return null;
+        }
+
+        $attrId = DB::table('attributes')
+            ->where('entity_type', 'persons')
+            ->where('code', 'linkedin')
+            ->value('id');
+
+        if (! $attrId) {
+            return null;
+        }
+
+        $normalized = $this->normalizeLinkedin($linkedin);
+        $slug = $this->linkedinSlug($normalized);
+
+        $rows = DB::table('attribute_values')
+            ->where('entity_type', 'persons')
+            ->where('attribute_id', $attrId)
+            ->where('text_value', 'like', '%'.$slug.'%')
+            ->orderBy('entity_id')
+            ->get(['entity_id', 'text_value']);
+
+        foreach ($rows as $row) {
+            if ($this->normalizeLinkedin((string) $row->text_value) === $normalized) {
+                return Person::find($row->entity_id);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find a Person by exact (case-insensitive) name within an organization matched
+     * by (case-insensitive) name.
+     */
+    private function findPersonByNameCompany(string $name, string $company): ?Person
+    {
+        $orgId = DB::table('organizations')
+            ->whereRaw('LOWER(name) = ?', [strtolower($company)])
+            ->value('id');
+
+        if (! $orgId) {
+            return null;
+        }
+
+        return Person::whereRaw('LOWER(name) = ?', [strtolower($name)])
+            ->where('organization_id', $orgId)
+            ->first();
+    }
+
+    /**
+     * Reduce a linkedin URL to a comparable form: lowercase, no scheme, no www.,
+     * no trailing slash (e.g. "linkedin.com/in/markkirkham").
+     */
+    private function normalizeLinkedin(string $value): string
+    {
+        $value = strtolower(trim($value));
+        $value = preg_replace('~^https?://~', '', $value);
+        $value = preg_replace('~^www\.~', '', $value);
+
+        return rtrim($value, '/');
+    }
+
+    /**
+     * Last path segment of a normalized linkedin URL (the vanity slug).
+     */
+    private function linkedinSlug(string $normalized): string
+    {
+        $parts = array_values(array_filter(explode('/', $normalized), fn ($p) => $p !== ''));
+
+        return end($parts) ?: $normalized;
+    }
+
+    /**
+     * Best-effort display name when no name was supplied (email-less contacts).
+     */
+    private function fallbackName(bool $hasEmail, string $email, string $company, string $linkedin): string
+    {
+        if ($hasEmail) {
+            return $email;
+        }
+
+        if ($company !== '') {
+            return $company;
+        }
+
+        if ($linkedin !== '') {
+            return $this->linkedinSlug($this->normalizeLinkedin($linkedin));
+        }
+
+        return 'Unknown';
     }
 
     private function resolveSource(string $name): int
@@ -222,7 +396,7 @@ class OutreachApiController extends Controller
         }
 
         return (int) DB::table('lead_sources')->insertGetId([
-            'name' => $name,
+            'name'       => $name,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

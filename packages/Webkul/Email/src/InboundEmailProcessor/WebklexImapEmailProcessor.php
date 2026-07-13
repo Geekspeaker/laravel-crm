@@ -3,6 +3,7 @@
 namespace Webkul\Email\InboundEmailProcessor;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Webklex\IMAP\Facades\Client;
 use Webklex\IMAP\Support\FolderCollection;
 use Webklex\PHPIMAP\Message;
@@ -108,16 +109,20 @@ class WebklexImapEmailProcessor implements InboundEmailProcessor
 
         /**
          * Relevance filter: only import a message if it threads to an email we sent
-         * (a reply from someone we're working) OR it comes from a known person/lead.
-         * Everything else is skipped so the CRM stays focused on outreach instead of
-         * mirroring the whole mailbox.
+         * (a reply from someone we're working) OR it comes from a known person/lead —
+         * matched on their primary emails OR their `alt_emails` attribute (people often
+         * reply from a secondary address). Everything else is skipped so the CRM stays
+         * focused on outreach instead of mirroring the whole mailbox.
          */
         $fromEmail = optional($attributes['from']->first())->mail;
 
-        $fromKnown = $fromEmail && Person::query()
-            ->whereJsonContains('emails', [['value' => $fromEmail]])
-            ->orWhereJsonContains('emails', [['value' => strtolower($fromEmail)]])
-            ->exists();
+        $fromKnown = $fromEmail && (
+            Person::query()
+                ->whereJsonContains('emails', [['value' => $fromEmail]])
+                ->orWhereJsonContains('emails', [['value' => strtolower($fromEmail)]])
+                ->exists()
+            || $this->isKnownAltEmail($fromEmail)
+        );
 
         if (empty($email) && ! $fromKnown) {
             return;
@@ -223,6 +228,46 @@ class WebklexImapEmailProcessor implements InboundEmailProcessor
         $targetTimezone = $targetTimezone ?: config('app.timezone');
 
         return $carbonDate->clone()->setTimezone($targetTimezone);
+    }
+
+    /**
+     * Match the sender against the `alt_emails` Person attribute. `alt_emails` is an
+     * EAV text attribute stored as a delimited string (e.g. "a@x.com; b@y.com") in
+     * attribute_values, so we narrow by a LIKE and confirm on an exact token to avoid
+     * substring false-positives. Primary emails are checked separately on persons.emails.
+     */
+    protected function isKnownAltEmail(?string $email): bool
+    {
+        $email = strtolower(trim((string) $email));
+
+        if ($email === '') {
+            return false;
+        }
+
+        $attributeId = DB::table('attributes')
+            ->where('entity_type', 'persons')
+            ->where('code', 'alt_emails')
+            ->value('id');
+
+        if (! $attributeId) {
+            return false;
+        }
+
+        $values = DB::table('attribute_values')
+            ->where('entity_type', 'persons')
+            ->where('attribute_id', $attributeId)
+            ->whereRaw('LOWER(text_value) LIKE ?', ['%'.$email.'%'])
+            ->pluck('text_value');
+
+        foreach ($values as $value) {
+            $tokens = preg_split('/[;,\s]+/', strtolower((string) $value), -1, PREG_SPLIT_NO_EMPTY);
+
+            if (in_array($email, $tokens, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

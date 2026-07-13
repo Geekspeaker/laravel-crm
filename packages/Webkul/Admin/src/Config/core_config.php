@@ -218,6 +218,21 @@ return [
                     ], [
                         'title' => 'admin::app.configuration.index.magic-ai.settings.models.gpt-4-1-mini',
                         'value' => 'gpt-4.1-mini',
+                    ], [
+                        // NVIDIA NIM models (OpenAI-compatible). Requires the API
+                        // Domain set to https://integrate.api.nvidia.com/v1 and an
+                        // nvapi-... key.
+                        'title' => 'admin::app.configuration.index.magic-ai.settings.models.nvidia-llama-3-3-70b',
+                        'value' => 'meta/llama-3.3-70b-instruct',
+                    ], [
+                        'title' => 'admin::app.configuration.index.magic-ai.settings.models.nvidia-llama-3-1-405b',
+                        'value' => 'meta/llama-3.1-405b-instruct',
+                    ], [
+                        'title' => 'admin::app.configuration.index.magic-ai.settings.models.nvidia-nemotron-70b',
+                        'value' => 'nvidia/llama-3.1-nemotron-70b-instruct',
+                    ], [
+                        'title' => 'admin::app.configuration.index.magic-ai.settings.models.nvidia-deepseek-r1',
+                        'value' => 'deepseek-ai/deepseek-r1',
                     ],
                 ],
             ], [

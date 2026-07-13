@@ -104,10 +104,46 @@
                         <div class="w-1/2 max-md:w-full">
                             {!! view_render_event('admin.leads.edit.lead_details.attributes.before', ['lead' => $lead]) !!}
 
+                            @php
+                                // Scope the edit form to the lead's segment, mirroring the
+                                // read view (leads/view/attributes.blade.php): only the
+                                // segment-relevant custom fields are editable, the other
+                                // segments' fields are hidden. Hidden text fields keep their
+                                // stored values on save (they're simply not in the POST).
+                                $segmentCodes = [
+                                    'vc'      => ['fund_stage', 'check_size', 'thesis_fit'],
+                                    'partner' => ['affiliate_network', 'category', 'payout_model'],
+                                    'hr'      => ['company_size', 'industry', 'region'],
+                                ];
+
+                                $sourceName = strtolower(optional($lead->source)->name ?? '');
+
+                                if (str_contains($sourceName, 'vc') || str_contains($sourceName, 'invest')) {
+                                    $activeSegment = 'vc';
+                                } elseif (str_contains($sourceName, 'partner') || str_contains($sourceName, 'reward') || str_contains($sourceName, 'affiliate')) {
+                                    $activeSegment = 'partner';
+                                } elseif (str_contains($sourceName, 'hr') || str_contains($sourceName, 'work') || str_contains($sourceName, 'edu') || str_contains($sourceName, 'people')) {
+                                    $activeSegment = 'hr';
+                                } else {
+                                    $activeSegment = null;
+                                }
+
+                                $hiddenSegmentCodes = [];
+                                foreach ($segmentCodes as $seg => $codes) {
+                                    if ($seg !== $activeSegment) {
+                                        $hiddenSegmentCodes = array_merge($hiddenSegmentCodes, $codes);
+                                    }
+                                }
+
+                                $scopedAttributes = $attributes->reject(
+                                    fn ($attribute) => in_array($attribute->code, $hiddenSegmentCodes, true)
+                                )->values();
+                            @endphp
+
                             <!-- Lead Attributes -->
                             <div class="grid grid-cols-2 gap-4">
                                 <x-admin::attributes
-                                    :custom-attributes="$attributes"
+                                    :custom-attributes="$scopedAttributes"
                                     :custom-validations="[
                                         'expected_close_date' => [
                                             'date_format:yyyy-MM-dd',

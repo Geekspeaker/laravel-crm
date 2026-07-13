@@ -11,6 +11,54 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 
 ---
 
+## 2026-07-13
+
+### Outreach write API — alternate-key identity (`OutreachApiController`)
+- `/leads/upsert` no longer hard-requires an email. Identity resolves in priority
+  order: valid **`email`** → **`linkedin`** → **`name`(+first/last) + `company`**. This
+  lets the outreach agent log **LinkedIn-only contacts** (e.g. Mark Kirkham) without
+  fabricating a placeholder email. If none of the three is supplied it returns
+  `422 {"error":"missing_identifier"}` (was `invalid_email`).
+- LinkedIn matching is normalized (ignores scheme / `www.` / trailing slash / case) and
+  reads the `linkedin` EAV attribute from `attribute_values` (narrow by vanity slug,
+  then exact normalized compare). name+company matches `persons.name`
+  (case-insensitive) within the org.
+- Email-less contacts are created with `emails => []`; a later upsert that includes an
+  email **backfills** it (never wipes existing emails/org). Response now includes
+  `matched_by` (`email|linkedin|name_company|created`).
+- `/touches` lead resolution reuses the same resolver, so touches can be keyed by
+  `lead_id` **or** `email` **or** `linkedin` **or** `name`+`company`.
+- Shared `resolvePerson()` / `findPersonByLinkedin()` / `findPersonByNameCompany()`
+  helpers; upsert + touches now go through one identity path. Contract doc updated
+  (`.kiro/steering/crm-outreach-api.md`).
+
+### Magic AI — NVIDIA NIM provider option (`core_config.php`, admin lang ×7)
+- Added NVIDIA NIM models to the Magic AI **Model** dropdown (OpenAI-compatible):
+  `meta/llama-3.3-70b-instruct`, `meta/llama-3.1-405b-instruct`,
+  `nvidia/llama-3.1-nemotron-70b-instruct`, `deepseek-ai/deepseek-r1`. Title keys added
+  to all 7 admin locales (lang-parity CI) and the `api-domain` hint now names the NVIDIA
+  endpoint.
+- No code change needed to *use* it — the importer / draft-opener / file-extract already
+  honor the **API Domain** + **API Key** + model id. To switch: set API Domain =
+  `https://integrate.api.nvidia.com/v1` + an `nvapi-` key in Configuration → Magic AI.
+  Documented in `business/outreach/crm/krayin-northflank-deploy.md` §6.5.
+
+### Lead edit form scoped by source (`leads/edit.blade.php`)
+- The lead **edit** form now shows only the segment-relevant custom fields (VC / Reward
+  Partner / HR-Work-Edu), matching the read view (`leads/view/attributes.blade.php`).
+  Other segments' fields are hidden; hidden text fields keep their stored values on save
+  (they're simply absent from the POST, and Krayin's attribute save skips absent text
+  codes). Same source→segment detection as the read view.
+
+### Inbound relevance filter matches `alt_emails` (`WebklexImapEmailProcessor`)
+- The `$fromKnown` check previously matched only a person's primary `emails` JSON. It now
+  also matches the sender against the `alt_emails` Person attribute (EAV text, stored as a
+  "; "-delimited string) via `isKnownAltEmail()` — narrow by LIKE, confirm on an exact
+  token to avoid substring false-positives. So replies from a contact's secondary address
+  are now captured onto the lead.
+
+---
+
 ## 2026-07-12
 
 ### Deployment / entrypoint (`docker-entrypoint.sh`, `Dockerfile`)
@@ -127,7 +175,7 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 - **Queue outgoing mail:** a background `queue:work` now runs, so outgoing mail could be
   queued (currently still sends synchronously on `serve`). Route the mailer to the queue
   to stop slow SMTP sends briefly blocking the web server.
-- **Alt-emails matching:** the inbound relevance filter matches a person's primary
-  emails only, not the `alt_emails` field — extend if replies come from alternates.
-- **Edit form scoping:** the lead *edit* form still shows all segment fields (only the
-  read view is scoped) — optional to scope it too.
+- ~~**Alt-emails matching:** the inbound relevance filter matches a person's primary
+  emails only.~~ Done 2026-07-13 (matches `alt_emails` too).
+- ~~**Edit form scoping:** the lead *edit* form still shows all segment fields.~~ Done
+  2026-07-13 (edit form scoped by source, like the read view).

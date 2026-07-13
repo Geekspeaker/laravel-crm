@@ -17,6 +17,41 @@
         </x-slot>
 
         <x-slot:content class="mt-4 !px-0 !pb-0">
+            @php
+                // Show only the segment-relevant custom fields based on the lead's
+                // source. Krayin attributes are global to all leads, so we hide the
+                // fields that belong to the OTHER segments.
+                $segmentCodes = [
+                    'vc'      => ['fund_stage', 'check_size', 'thesis_fit'],
+                    'partner' => ['affiliate_network', 'category', 'payout_model'],
+                    'hr'      => ['company_size', 'industry', 'region'],
+                ];
+
+                $sourceName = strtolower(optional($lead->source)->name ?? '');
+
+                if (str_contains($sourceName, 'vc') || str_contains($sourceName, 'invest')) {
+                    $activeSegment = 'vc';
+                } elseif (str_contains($sourceName, 'partner') || str_contains($sourceName, 'reward') || str_contains($sourceName, 'affiliate')) {
+                    $activeSegment = 'partner';
+                } elseif (str_contains($sourceName, 'hr') || str_contains($sourceName, 'work') || str_contains($sourceName, 'edu') || str_contains($sourceName, 'people')) {
+                    $activeSegment = 'hr';
+                } else {
+                    $activeSegment = null;
+                }
+
+                $hiddenSegmentCodes = [];
+                foreach ($segmentCodes as $seg => $codes) {
+                    if ($seg !== $activeSegment) {
+                        $hiddenSegmentCodes = array_merge($hiddenSegmentCodes, $codes);
+                    }
+                }
+
+                $leadViewExcludeCodes = array_merge(
+                    ['title', 'description', 'lead_pipeline_id', 'lead_pipeline_stage_id'],
+                    $hiddenSegmentCodes
+                );
+            @endphp
+
             {!! view_render_event('admin.leads.view.attributes.form_controls.before', ['lead' => $lead]) !!}
 
             <x-admin::form
@@ -30,7 +65,7 @@
                     <x-admin::attributes.view
                         :custom-attributes="app('Webkul\Attribute\Repositories\AttributeRepository')->findWhere([
                             'entity_type' => 'leads',
-                            ['code', 'NOTIN', ['title', 'description', 'lead_pipeline_id', 'lead_pipeline_stage_id']]
+                            ['code', 'NOTIN', $leadViewExcludeCodes]
                         ])"
                         :entity="$lead"
                         :url="route('admin.leads.attributes.update', $lead->id)"

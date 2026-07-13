@@ -91,6 +91,7 @@ chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 php artisan storage:link 2>/dev/null || true
 
 php artisan config:clear
+php artisan view:clear 2>/dev/null || true
 php artisan package:discover --ansi || true
 
 # Idempotent + additive: only applies pending migrations, never drops data.

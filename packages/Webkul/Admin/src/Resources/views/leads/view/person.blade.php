@@ -79,6 +79,23 @@
 
                         {!! view_render_event('admin.leads.view.person.email.after', ['lead' => $lead]) !!}
 
+                        {{-- Social / web links (custom person attributes) --}}
+                        @foreach (['linkedin' => 'LinkedIn', 'website' => 'Website'] as $socialCode => $socialLabel)
+                            @if (! empty($lead->person->{$socialCode}))
+                                <a
+                                    class="text-brandColor"
+                                    href="{{ $lead->person->{$socialCode} }}"
+                                    target="_blank"
+                                >
+                                    {{ $socialLabel }}
+                                </a>
+                            @endif
+                        @endforeach
+
+                        @if (! empty($lead->person->x_handle))
+                            <span class="dark:text-white">X: {{ $lead->person->x_handle }}</span>
+                        @endif
+
                         {!! view_render_event('admin.leads.view.person.contact_numbers.before', ['lead' => $lead]) !!}
 
                         @foreach ($lead->person->contact_numbers as $contactNumber)

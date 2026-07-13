@@ -85,6 +85,16 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 - Dropped the `temperature` param from all AI calls (reasoning models only allow the
   default).
 
+### Outreach write API (token-gated)
+- `POST /api/outreach/leads/upsert` (idempotent by email → Org+Person+Lead, mirrors the
+  importer's field mapping; returns lead_id + created/updated) and
+  `POST /api/outreach/touches` (append an activity + optional stage change; idempotent via
+  a dedupe hash in `activities.additional`).
+- Auth: static bearer token `CRM_API_TOKEN` (Northflank env → `.env`) checked by
+  `VerifyCrmApiToken` middleware; rate-limited `throttle:60,1`. Least privilege — only these
+  two endpoints, no session/super-admin. Rotate by changing the env var + redeploy.
+- Lets the outreach agent log adds + touches programmatically (no MySQL, no markdown).
+
 ### PDL enrichment (in-app)
 - `php artisan skimify:enrich` + a queued `EnrichLead` job + a **🔎 Enrich** button on the
   lead view. One People Data Labs **Person Enrichment** call (by primary email) fills the

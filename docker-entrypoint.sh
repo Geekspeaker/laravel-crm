@@ -86,6 +86,9 @@ IMAP_PASSWORD="${IMAP_PASSWORD}"
 
 # People Data Labs (in-app lead/company enrichment). Set PDL_API_KEY on Northflank.
 PDL_API_KEY="${PDL_API_KEY}"
+
+# Static token for the outreach write API (/api/outreach/*). Set CRM_API_TOKEN on Northflank.
+CRM_API_TOKEN="${CRM_API_TOKEN}"
 EOF
 
 # Safety net: if APP_KEY was not provided as an env var, warn loudly. We do NOT

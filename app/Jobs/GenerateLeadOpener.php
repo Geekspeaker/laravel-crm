@@ -31,8 +31,8 @@ class GenerateLeadOpener implements ShouldQueue
     public function handle(): void
     {
         Artisan::call('skimify:draft-opener', [
-            '--lead'   => $this->leadId,
-            '--force'  => true,
+            '--lead' => $this->leadId,
+            '--force' => true,
             '--no-web' => ! $this->useWeb,
         ]);
     }

@@ -112,4 +112,10 @@ php artisan package:discover --ansi || true
 # state with `php artisan migrate:status`.
 php artisan migrate --force || echo "[entrypoint] WARNING: migrate --force failed; serving anyway. Inspect with 'php artisan migrate:status'."
 
+# Background scheduler so the inbound email fetch (Schedule::command in
+# routes/console.php) runs automatically. Runs alongside the web server and dies
+# with the container. Output discarded to keep logs clean.
+echo "[entrypoint] Starting scheduler (inbound email sync)..."
+php artisan schedule:work >/dev/null 2>&1 &
+
 exec php artisan serve --host=0.0.0.0 --port=8000

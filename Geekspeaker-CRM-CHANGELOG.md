@@ -67,18 +67,30 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 - Person panel on the lead view now surfaces **LinkedIn / Website / X** from the
   contact record.
 
+### Email automation — relevant-only inbound + threading + auto-sync
+- **Reply-To = From** (`Email.php` Mailable): outgoing mail now replies to the real
+  sender mailbox instead of the `@MAIL_DOMAIN` tracking address — replies land in the
+  polled inbox, still thread via the existing `Message-ID`/`References` headers, and
+  Reply-To matches From (fixes spam-foldering). Pair with `MAIL_DOMAIN=geekspeaker.com`.
+- **Relevance filter** (`WebklexImapEmailProcessor`): only imports a message if it
+  threads to an email we sent OR is from a known person/lead — the CRM captures replies
+  from people we're working, not the whole mailbox. Fetch window is now
+  `INBOUND_FETCH_DAYS` (default 14) instead of a hardcoded 10.
+- **Auto-sync** (`docker-entrypoint.sh`): runs `php artisan schedule:work` in the
+  background so the existing `inbound-emails:process` schedule (every 5 min) actually
+  fires. Incoming replies now appear on the matching lead automatically.
+
 ---
 
 ## Open / planned (not yet done)
 
-- **Email deliverability:** set `MAIL_DOMAIN=geekspeaker.com` so the threading
-  Reply-To stops using `@webkul.com` (mismatched-domain Reply-To was sending mail to
-  junk). Either add a Zoho **catch-all** → polled mailbox so replies thread and don't
-  bounce, or change `Email.php` to set `Reply-To = From`.
 - **SMTP port:** `MAIL_PORT` must be `465` (ssl) or `587` (tls) — a `456` typo caused a
-  send hang / 503.
-- **Background processes:** no scheduler/queue worker runs, so `inbound-emails:process`
-  (IMAP fetch) and queued mail must be triggered manually. Consider adding a worker +
-  scheduler to the container for automatic inbound sync.
+  send hang / 503. (Env-var fix on Northflank.)
+- **Outgoing queue worker:** mail still sends synchronously on the single-threaded
+  `serve`, so a slow SMTP send briefly blocks the server. A queue worker (`queue:work`)
+  + `QUEUE_CONNECTION` for mail would offload it. (Inbound is already async via the
+  scheduler.)
+- **Alt-emails matching:** the inbound relevance filter matches a person's primary
+  emails only, not the `alt_emails` field — extend if replies come from alternates.
 - **Edit form scoping:** the lead *edit* form still shows all segment fields (only the
   read view is scoped) — optional to scope it too.

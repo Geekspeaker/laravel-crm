@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Webklex\IMAP\Facades\Client;
 use Webklex\IMAP\Support\FolderCollection;
 use Webklex\PHPIMAP\Message;
+use Webkul\Contact\Models\Person;
 use Webkul\Email\Enums\SupportedFolderEnum;
 use Webkul\Email\InboundEmailProcessor\Contracts\InboundEmailProcessor;
 use Webkul\Email\Repositories\AttachmentRepository;
@@ -106,6 +107,23 @@ class WebklexImapEmailProcessor implements InboundEmailProcessor
         }
 
         /**
+         * Relevance filter: only import a message if it threads to an email we sent
+         * (a reply from someone we're working) OR it comes from a known person/lead.
+         * Everything else is skipped so the CRM stays focused on outreach instead of
+         * mirroring the whole mailbox.
+         */
+        $fromEmail = optional($attributes['from']->first())->mail;
+
+        $fromKnown = $fromEmail && Person::query()
+            ->whereJsonContains('emails', [['value' => $fromEmail]])
+            ->orWhereJsonContains('emails', [['value' => strtolower($fromEmail)]])
+            ->exists();
+
+        if (empty($email) && ! $fromKnown) {
+            return;
+        }
+
+        /**
          * Maps the folder name to the supported folder in our application.
          *
          * To Do: Review this.
@@ -174,7 +192,7 @@ class WebklexImapEmailProcessor implements InboundEmailProcessor
                 return;
             }
 
-            return $folder->query()->since(now()->subDays(10))->get()->each(function ($message) {
+            return $folder->query()->since(now()->subDays((int) (env('INBOUND_FETCH_DAYS', 14))))->get()->each(function ($message) {
                 $this->processMessage($message);
             });
         });

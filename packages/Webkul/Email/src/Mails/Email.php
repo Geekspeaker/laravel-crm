@@ -27,7 +27,11 @@ class Email extends Mailable
     {
         $this->from($this->email->from)
             ->to($this->email->reply_to)
-            ->replyTo($this->email->parent_id ? $this->email->parent->unique_id : $this->email->unique_id)
+            // Reply-To = the real sender mailbox (not the @MAIL_DOMAIN tracking
+            // address). Replies land in the polled inbox and still thread via the
+            // Message-ID / References headers set below. Also keeps Reply-To on the
+            // same domain as From, which fixes spam-foldering.
+            ->replyTo($this->email->from)
             ->cc($this->email->cc ?? [])
             ->bcc($this->email->bcc ?? [])
             ->subject($this->email->parent_id ? $this->email->parent->subject : $this->email->subject)

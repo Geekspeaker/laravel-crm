@@ -110,8 +110,11 @@
                                 // segment-relevant custom fields are editable, the other
                                 // segments' fields are hidden. Hidden text fields keep their
                                 // stored values on save (they're simply not in the POST).
+                                // thesis_fit is intentionally universal (generated for
+                                // every segment) — not scoped; only its label changes
+                                // for non-VCs, below.
                                 $segmentCodes = [
-                                    'vc'      => ['fund_stage', 'check_size', 'thesis_fit'],
+                                    'vc'      => ['fund_stage', 'check_size'],
                                     'partner' => ['affiliate_network', 'category', 'payout_model'],
                                     'hr'      => ['company_size', 'industry', 'region'],
                                 ];
@@ -138,6 +141,14 @@
                                 $scopedAttributes = $attributes->reject(
                                     fn ($attribute) => in_array($attribute->code, $hiddenSegmentCodes, true)
                                 )->values();
+
+                                // "Thesis Fit" is VC jargon; relabel for other segments
+                                // (in-memory only — same stored value).
+                                if ($activeSegment && $activeSegment !== 'vc') {
+                                    if ($thesisFitAttribute = $scopedAttributes->firstWhere('code', 'thesis_fit')) {
+                                        $thesisFitAttribute->name = 'Skimify Fit';
+                                    }
+                                }
                             @endphp
 
                             <!-- Lead Attributes -->

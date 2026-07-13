@@ -35,8 +35,11 @@
                 // Show only the segment-relevant custom fields based on the lead's
                 // source. Krayin attributes are global to all leads, so we hide the
                 // fields that belong to the OTHER segments.
+                // NOTE: thesis_fit is intentionally NOT segment-scoped — the Copilot
+                // generates it for every segment, so it stays visible for all leads
+                // (only its label changes for non-VCs, below).
                 $segmentCodes = [
-                    'vc'      => ['fund_stage', 'check_size', 'thesis_fit'],
+                    'vc'      => ['fund_stage', 'check_size'],
                     'partner' => ['affiliate_network', 'category', 'payout_model'],
                     'hr'      => ['company_size', 'industry', 'region'],
                 ];
@@ -64,6 +67,19 @@
                     ['title', 'description', 'lead_pipeline_id', 'lead_pipeline_stage_id'],
                     $hiddenSegmentCodes
                 );
+
+                $leadViewAttributes = app('Webkul\Attribute\Repositories\AttributeRepository')->findWhere([
+                    'entity_type' => 'leads',
+                    ['code', 'NOTIN', $leadViewExcludeCodes],
+                ]);
+
+                // "Thesis Fit" is VC jargon; relabel it for the other segments (the
+                // stored value is the same one-line fit rationale). In-memory only.
+                if ($activeSegment && $activeSegment !== 'vc') {
+                    if ($thesisFitAttribute = $leadViewAttributes->firstWhere('code', 'thesis_fit')) {
+                        $thesisFitAttribute->name = 'Skimify Fit';
+                    }
+                }
             @endphp
 
             {!! view_render_event('admin.leads.view.attributes.form_controls.before', ['lead' => $lead]) !!}
@@ -77,10 +93,7 @@
                     {!! view_render_event('admin.leads.view.attributes.form_controls.attributes.view.before', ['lead' => $lead]) !!}
         
                     <x-admin::attributes.view
-                        :custom-attributes="app('Webkul\Attribute\Repositories\AttributeRepository')->findWhere([
-                            'entity_type' => 'leads',
-                            ['code', 'NOTIN', $leadViewExcludeCodes]
-                        ])"
+                        :custom-attributes="$leadViewAttributes"
                         :entity="$lead"
                         :url="route('admin.leads.attributes.update', $lead->id)"
                         :allow-edit="true"

@@ -50,6 +50,15 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
   (they're simply absent from the POST, and Krayin's attribute save skips absent text
   codes). Same source→segment detection as the read view.
 
+### `thesis_fit` is universal + relabeled per segment (lead view + edit blades)
+- The Copilot generates `thesis_fit` for **every** segment, but the segment scoping had
+  it filed under VC-only fields, so it was hidden on non-VC leads (e.g. an HR lead where
+  a fit line had been generated). It's now treated as a universal field — visible on all
+  leads in both the read view and the edit form.
+- Because "Thesis Fit" is VC jargon, the **label** is relabeled to **"Skimify Fit"** for
+  non-VC segments (partner / HR-Work-Edu); VC leads keep "Thesis Fit". Label override is
+  in-memory only — the stored attribute value/code is unchanged.
+
 ### Inbound relevance filter matches `alt_emails` (`WebklexImapEmailProcessor`)
 - The `$fromKnown` check previously matched only a person's primary `emails` JSON. It now
   also matches the sender against the `alt_emails` Person attribute (EAV text, stored as a

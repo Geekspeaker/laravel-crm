@@ -69,12 +69,17 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 
 ### Outreach Copilot — thesis-matched opener generator
 - New lead attributes `ai_dossier` + `ai_draft` (migration).
-- `php artisan skimify:draft-opener` — for each lead, builds a short research dossier
-  and a punchy, hook-first opener that connects Skimify's attention-data thesis to the
-  target's segment angle (VC thesis / partner category / HR pain), optionally grounded
-  by a best-effort read of the firm's website. Saved to `ai_dossier`/`ai_draft` for
-  review — never auto-sent. Flags: `--lead`, `--source`, `--stage`, `--limit`,
-  `--force`, `--no-web`. Uses the Magic AI (OpenAI) config.
+- `php artisan skimify:draft-opener` — for each lead, builds a short research dossier,
+  a **thesis-fit** line (saved to the `thesis_fit` field), and a punchy, hook-first
+  opener connecting Skimify's attention-data thesis to the target's segment angle
+  (VC thesis / partner category / HR pain), optionally grounded by a read of the firm's
+  website. Saved to `ai_dossier` / `thesis_fit` / `ai_draft` for review — never
+  auto-sent. Flags: `--lead`, `--source`, `--stage`, `--limit`, `--force`, `--no-web`.
+- **In-dashboard "✨ AI Draft" button** on the lead view (About Lead panel):
+  `POST admin/leads/{id}/ai-draft` → `LeadAiController` runs the copilot for that lead
+  (synchronously, `--no-web` for speed since there's no queue worker) and reloads.
+- Dropped the `temperature` param from all AI calls (reasoning models only allow the
+  default).
 
 ### Email automation — relevant-only inbound + threading + auto-sync
 - **Reply-To = From** (`Email.php` Mailable): outgoing mail now replies to the real

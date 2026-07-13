@@ -7,11 +7,15 @@
                 <h4>@lang('admin::app.leads.view.attributes.title')</h4>
                 
                 @if (bouncer()->hasPermission('leads.edit'))
-                    <a
-                        href="{{ route('admin.leads.edit', $lead->id) }}"
-                        class="icon-edit rounded-md p-1.5 text-2xl transition-all hover:bg-gray-100 dark:hover:bg-gray-950"
-                        target="_blank"
-                    ></a>
+                    <div class="flex items-center gap-1">
+                        <v-lead-ai-draft url="{{ route('admin.leads.ai_draft', $lead->id) }}"></v-lead-ai-draft>
+
+                        <a
+                            href="{{ route('admin.leads.edit', $lead->id) }}"
+                            class="icon-edit rounded-md p-1.5 text-2xl transition-all hover:bg-gray-100 dark:hover:bg-gray-950"
+                            target="_blank"
+                        ></a>
+                    </div>
                 @endif
             </div>
         </x-slot>
@@ -82,3 +86,68 @@
 </div>
 
 {!! view_render_event('admin.leads.view.attributes.before', ['lead' => $lead]) !!}
+
+
+@pushOnce('scripts')
+    <script
+        type="text/x-template"
+        id="v-lead-ai-draft-template"
+    >
+        <button
+            type="button"
+            class="secondary-button flex items-center gap-1 text-sm"
+            @click="run"
+            :disabled="isLoading"
+        >
+            <span v-if="! isLoading">✨ AI Draft</span>
+            <span v-else>Generating…</span>
+        </button>
+    </script>
+
+    <script type="module">
+        app.component('v-lead-ai-draft', {
+            template: '#v-lead-ai-draft-template',
+
+            props: {
+                url: {
+                    type: String,
+                    required: true,
+                },
+            },
+
+            data() {
+                return {
+                    isLoading: false,
+                };
+            },
+
+            methods: {
+                run() {
+                    if (this.isLoading) {
+                        return;
+                    }
+
+                    this.isLoading = true;
+
+                    this.$axios.post(this.url)
+                        .then((response) => {
+                            this.$emitter.emit('add-flash', {
+                                type: 'success',
+                                message: response.data.message,
+                            });
+
+                            window.location.reload();
+                        })
+                        .catch((error) => {
+                            this.$emitter.emit('add-flash', {
+                                type: 'error',
+                                message: error.response?.data?.message || error.message,
+                            });
+
+                            this.isLoading = false;
+                        });
+                },
+            },
+        });
+    </script>
+@endPushOnce

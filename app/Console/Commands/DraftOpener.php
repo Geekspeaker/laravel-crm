@@ -118,11 +118,19 @@ class DraftOpener extends Command
 
                 $draft = trim(($result['email_subject'] ?? '')."\n\n".($result['email_body'] ?? ''));
 
-                $leadRepository->update([
+                $leadUpdate = [
                     'entity_type' => 'leads',
                     'ai_dossier' => $result['dossier'] ?? '',
                     'ai_draft' => $draft,
-                ], $lead->id, ['ai_dossier', 'ai_draft']);
+                ];
+                $leadCodes = ['ai_dossier', 'ai_draft'];
+
+                if (! empty($result['thesis_fit'])) {
+                    $leadUpdate['thesis_fit'] = $result['thesis_fit'];
+                    $leadCodes[] = 'thesis_fit';
+                }
+
+                $leadRepository->update($leadUpdate, $lead->id, $leadCodes);
 
                 $this->line("  ✓ #{$lead->id} {$lead->title}");
                 $done++;
@@ -228,11 +236,14 @@ class DraftOpener extends Command
             ."\nTASKS:\n"
             .'1) dossier: 3-5 tight bullet points on who they are and the single best reason Skimify fits THEM. '
             ."Ground it in the facts/website above; if unsure, say so — never fabricate.\n"
-            ."2) email_subject: <= 6 words, specific, no clickbait.\n"
-            ."3) email_body: Golvis's voice — PUNCHY, 4 lines max, hook-first (line 1 = a pattern-break tied to the "
+            ."2) thesis_fit: ONE sharp sentence on how Skimify maps to THIS target's thesis/mandate/audience "
+            ."(VC: their investing thesis; partner: audience/category fit; HR: the engagement pain). "
+            ."Ground it; if you can't tell, say 'insufficient public info'.\n"
+            ."3) email_subject: <= 6 words, specific, no clickbait.\n"
+            ."4) email_body: Golvis's voice — PUNCHY, 4 lines max, hook-first (line 1 = a pattern-break tied to the "
             ."attention-data thesis and THIS person's angle). Plain text, no greeting fluff, one clear ask. "
             ."Sign as Golvis.\n\n"
-            .'Respond ONLY as JSON: {"dossier": "...", "email_subject": "...", "email_body": "..."}';
+            .'Respond ONLY as JSON: {"dossier": "...", "thesis_fit": "...", "email_subject": "...", "email_body": "..."}';
 
         try {
             $response = Http::withHeaders([

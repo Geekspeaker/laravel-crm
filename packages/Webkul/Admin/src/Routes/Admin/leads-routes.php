@@ -28,6 +28,9 @@ Route::controller(LeadController::class)->prefix('leads')->group(function () {
     // Outreach Copilot: generate dossier + thesis fit + opener for a single lead.
     Route::post('{id}/ai-draft', [LeadAiController::class, 'draft'])->name('admin.leads.ai_draft');
 
+    // PDL enrichment for a single lead.
+    Route::post('{id}/enrich', [LeadAiController::class, 'enrich'])->name('admin.leads.enrich');
+
     Route::put('stage/edit/{id}', 'updateStage')->name('admin.leads.stage.update');
 
     Route::get('search', 'search')->name('admin.leads.search');

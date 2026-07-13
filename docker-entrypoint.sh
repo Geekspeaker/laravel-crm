@@ -77,6 +77,9 @@ IMAP_ENCRYPTION="${IMAP_ENCRYPTION:-ssl}"
 IMAP_VALIDATE_CERT="${IMAP_VALIDATE_CERT:-true}"
 IMAP_USERNAME="${IMAP_USERNAME}"
 IMAP_PASSWORD="${IMAP_PASSWORD}"
+
+# People Data Labs (in-app lead/company enrichment). Set PDL_API_KEY on Northflank.
+PDL_API_KEY="${PDL_API_KEY}"
 EOF
 
 # Safety net: if APP_KEY was not provided as an env var, warn loudly. We do NOT

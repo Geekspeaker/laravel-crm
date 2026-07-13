@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\EnrichLead;
 use App\Jobs\GenerateLeadOpener;
 use Illuminate\Routing\Controller;
 
@@ -19,6 +20,15 @@ class LeadAiController extends Controller
 
         return response()->json([
             'message' => 'Generating the AI dossier + opener in the background — refresh in ~30s.',
+        ]);
+    }
+
+    public function enrich($id)
+    {
+        EnrichLead::dispatch((int) $id);
+
+        return response()->json([
+            'message' => 'Enriching from People Data Labs in the background — refresh in ~20s.',
         ]);
     }
 }

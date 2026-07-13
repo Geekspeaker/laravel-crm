@@ -8,7 +8,17 @@
                 
                 @if (bouncer()->hasPermission('leads.edit'))
                     <div class="flex items-center gap-1">
-                        <v-lead-ai-draft url="{{ route('admin.leads.ai_draft', $lead->id) }}"></v-lead-ai-draft>
+                        <v-lead-ai-action
+                            url="{{ route('admin.leads.enrich', $lead->id) }}"
+                            label="🔎 Enrich"
+                            :delay="20000"
+                        ></v-lead-ai-action>
+
+                        <v-lead-ai-action
+                            url="{{ route('admin.leads.ai_draft', $lead->id) }}"
+                            label="✨ AI Draft"
+                            :delay="30000"
+                        ></v-lead-ai-action>
 
                         <a
                             href="{{ route('admin.leads.edit', $lead->id) }}"
@@ -91,7 +101,7 @@
 @pushOnce('scripts')
     <script
         type="text/x-template"
-        id="v-lead-ai-draft-template"
+        id="v-lead-ai-action-template"
     >
         <button
             type="button"
@@ -99,19 +109,29 @@
             @click="run"
             :disabled="isLoading"
         >
-            <span v-if="! isLoading">✨ AI Draft</span>
-            <span v-else>Generating…</span>
+            <span v-if="! isLoading">@{{ label }}</span>
+            <span v-else>Working…</span>
         </button>
     </script>
 
     <script type="module">
-        app.component('v-lead-ai-draft', {
-            template: '#v-lead-ai-draft-template',
+        app.component('v-lead-ai-action', {
+            template: '#v-lead-ai-action-template',
 
             props: {
                 url: {
                     type: String,
                     required: true,
+                },
+
+                label: {
+                    type: String,
+                    default: 'Run',
+                },
+
+                delay: {
+                    type: Number,
+                    default: 30000,
                 },
             },
 
@@ -138,7 +158,7 @@
 
                             // The job runs on the queue; give it time, then refresh
                             // so the generated fields show. Re-click if not ready yet.
-                            setTimeout(() => window.location.reload(), 30000);
+                            setTimeout(() => window.location.reload(), this.delay);
                         })
                         .catch((error) => {
                             this.$emitter.emit('add-flash', {

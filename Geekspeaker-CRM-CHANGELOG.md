@@ -85,6 +85,16 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 - Dropped the `temperature` param from all AI calls (reasoning models only allow the
   default).
 
+### PDL enrichment (in-app)
+- `php artisan skimify:enrich` + a queued `EnrichLead` job + a **🔎 Enrich** button on the
+  lead view. One People Data Labs **Person Enrichment** call (by primary email) fills the
+  person (job_title, linkedin, website, alt_emails) AND the company fields the PDL person
+  record carries (company_size, industry, region) — so it doesn't burn the scarce Company
+  Enrichment credits. Only fills empty fields unless `--force`; rate-limited to stay under
+  100/min. Needs `PDL_API_KEY` set on Northflank (written to `.env` by the entrypoint).
+- The lead attributes panel now has two buttons — **🔎 Enrich** and **✨ AI Draft** — sharing
+  a generic `v-lead-ai-action` Vue component (queued, non-blocking, auto-refresh).
+
 ### Email automation — relevant-only inbound + threading + auto-sync
 - **Reply-To = From** (`Email.php` Mailable): outgoing mail now replies to the real
   sender mailbox instead of the `@MAIL_DOMAIN` tracking address — replies land in the

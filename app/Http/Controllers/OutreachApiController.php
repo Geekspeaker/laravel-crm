@@ -57,7 +57,7 @@ class OutreachApiController extends Controller
         // Identity gate: need email OR linkedin OR name+company. Never invent an email.
         if (! $hasEmail && $linkedin === '' && ! ($rawName !== '' && $company !== '')) {
             return response()->json([
-                'error'   => 'missing_identifier',
+                'error' => 'missing_identifier',
                 'message' => 'Provide a valid "email", or a "linkedin" URL, or "name" (or first/last) + "company".',
             ], 422);
         }
@@ -85,12 +85,12 @@ class OutreachApiController extends Controller
             $matchedBy = 'created';
 
             $person = $personRepository->create(array_filter(array_merge([
-                'name'              => $name,
-                'emails'            => $hasEmail ? [['value' => $email, 'label' => 'work']] : [],
-                'job_title'         => $title ?: null,
+                'name' => $name,
+                'emails' => $hasEmail ? [['value' => $email, 'label' => 'work']] : [],
+                'job_title' => $title ?: null,
                 'organization_name' => $company ?: null,
-                'user_id'           => $ownerId,
-                'entity_type'       => 'persons',
+                'user_id' => $ownerId,
+                'entity_type' => 'persons',
             ], $personAttrs), fn ($v) => ! is_null($v)));
         } else {
             // Preserve existing emails; backfill a primary email onto a contact we
@@ -102,8 +102,8 @@ class OutreachApiController extends Controller
 
             $update = [
                 'entity_type' => 'persons',
-                'user_id'     => $person->user_id,
-                'emails'      => $emails,
+                'user_id' => $person->user_id,
+                'emails' => $emails,
             ];
             $codes = [];
 
@@ -143,16 +143,16 @@ class OutreachApiController extends Controller
 
         if (! $lead) {
             $lead = $leadRepository->create(array_merge([
-                'title'                  => $company ? "{$name} - {$company}" : $name,
-                'lead_value'             => 0,
-                'status'                 => 1,
-                'person_id'              => $person->id,
-                'lead_source_id'         => $sourceId,
-                'lead_type_id'           => 1,
-                'lead_pipeline_id'       => $pipelineId,
+                'title' => $company ? "{$name} - {$company}" : $name,
+                'lead_value' => 0,
+                'status' => 1,
+                'person_id' => $person->id,
+                'lead_source_id' => $sourceId,
+                'lead_type_id' => 1,
+                'lead_pipeline_id' => $pipelineId,
                 'lead_pipeline_stage_id' => $stageId,
-                'user_id'                => $ownerId,
-                'entity_type'            => 'leads',
+                'user_id' => $ownerId,
+                'entity_type' => 'leads',
             ], $leadAttrs));
         } else {
             $update = array_merge($leadAttrs, ['entity_type' => 'leads']);
@@ -169,10 +169,10 @@ class OutreachApiController extends Controller
         }
 
         return response()->json([
-            'action'     => $created ? 'created' : 'updated',
-            'lead_id'    => $lead->id,
-            'person_id'  => $person->id,
-            'stage'      => $stageCode,
+            'action' => $created ? 'created' : 'updated',
+            'lead_id' => $lead->id,
+            'person_id' => $person->id,
+            'stage' => $stageCode,
             'matched_by' => $matchedBy,
         ]);
     }
@@ -218,14 +218,14 @@ class OutreachApiController extends Controller
         $ownerId = $lead->user_id ?: DB::table('users')->orderBy('id')->value('id');
 
         $activity = $activityRepository->create([
-            'type'          => $type,
-            'title'         => '['.ucfirst($channel).' · '.$direction.'] '.$subject,
-            'comment'       => $note,
+            'type' => $type,
+            'title' => '['.ucfirst($channel).' · '.$direction.'] '.$subject,
+            'comment' => $note,
             'schedule_from' => $occurredAt,
-            'schedule_to'   => $occurredAt,
-            'is_done'       => 1,
-            'user_id'       => $ownerId,
-            'additional'    => json_encode(['channel' => $channel, 'direction' => $direction, 'dedupe' => $dedupe]),
+            'schedule_to' => $occurredAt,
+            'is_done' => 1,
+            'user_id' => $ownerId,
+            'additional' => json_encode(['channel' => $channel, 'direction' => $direction, 'dedupe' => $dedupe]),
         ]);
 
         $activity->leads()->attach($lead->id);
@@ -241,10 +241,10 @@ class OutreachApiController extends Controller
         }
 
         return response()->json([
-            'action'      => 'logged',
+            'action' => 'logged',
             'activity_id' => $activity->id,
-            'lead_id'     => $lead->id,
-            'stage'       => $newStage,
+            'lead_id' => $lead->id,
+            'stage' => $newStage,
         ]);
     }
 
@@ -396,7 +396,7 @@ class OutreachApiController extends Controller
         }
 
         return (int) DB::table('lead_sources')->insertGetId([
-            'name'       => $name,
+            'name' => $name,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

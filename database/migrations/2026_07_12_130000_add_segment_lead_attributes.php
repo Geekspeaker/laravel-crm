@@ -23,35 +23,35 @@ return new class extends Migration
         $now = Carbon::now();
 
         $codes = [
-            'fund_stage'        => 'Fund Stage',
-            'check_size'        => 'Check Size',
-            'thesis_fit'        => 'Thesis Fit',
+            'fund_stage' => 'Fund Stage',
+            'check_size' => 'Check Size',
+            'thesis_fit' => 'Thesis Fit',
             'affiliate_network' => 'Affiliate Network',
-            'category'          => 'Category',
-            'payout_model'      => 'Payout Model',
-            'company_size'      => 'Company Size',
-            'industry'          => 'Industry',
-            'region'            => 'Region',
-            'priority'          => 'Priority',
+            'category' => 'Category',
+            'payout_model' => 'Payout Model',
+            'company_size' => 'Company Size',
+            'industry' => 'Industry',
+            'region' => 'Region',
+            'priority' => 'Priority',
         ];
 
         $sort = 21;
 
         foreach ($codes as $code => $name) {
             DB::table('attributes')->insertOrIgnore([
-                'code'            => $code,
-                'name'            => $name,
-                'type'            => 'text',
-                'entity_type'     => 'leads',
-                'lookup_type'     => null,
-                'validation'      => null,
-                'sort_order'      => $sort++,
-                'is_required'     => 0,
-                'is_unique'       => 0,
-                'quick_add'       => 0,
+                'code' => $code,
+                'name' => $name,
+                'type' => 'text',
+                'entity_type' => 'leads',
+                'lookup_type' => null,
+                'validation' => null,
+                'sort_order' => $sort++,
+                'is_required' => 0,
+                'is_unique' => 0,
+                'quick_add' => 0,
                 'is_user_defined' => 1,
-                'created_at'      => $now,
-                'updated_at'      => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
     }

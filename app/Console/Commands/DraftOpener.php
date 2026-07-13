@@ -244,7 +244,6 @@ class DraftOpener extends Command
                     ['role' => 'system', 'content' => "You are an outreach copilot for a pre-revenue startup. Be specific, grounded, and never invent metrics.\n\n".$this->companyContext],
                     ['role' => 'user', 'content' => $user],
                 ],
-                'temperature' => 0.5,
             ]);
 
             if ($response->failed()) {

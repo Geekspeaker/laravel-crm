@@ -299,7 +299,6 @@ class ImportOutreachLeads extends Command
                     ['role' => 'system', 'content' => 'You map spreadsheet headers to fields. Reply with JSON only.'],
                     ['role' => 'user', 'content' => $prompt],
                 ],
-                'temperature' => 0,
             ]);
 
             if ($response->failed()) {

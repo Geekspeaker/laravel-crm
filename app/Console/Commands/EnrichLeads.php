@@ -77,12 +77,14 @@ class EnrichLeads extends Command
                 $errors++;
                 $this->warn("  ✗ #{$lead->id}: ".$e->getMessage());
                 usleep(700000);
+
                 continue;
             }
 
             if ($data === null) {
                 $notFound++;
                 usleep(700000);
+
                 continue;
             }
 
@@ -130,8 +132,8 @@ class EnrichLeads extends Command
     {
         $update = [
             'entity_type' => 'persons',
-            'emails'      => [['value' => $email, 'label' => 'work']],
-            'user_id'     => $person->user_id,
+            'emails' => [['value' => $email, 'label' => 'work']],
+            'user_id' => $person->user_id,
         ];
         $codes = [];
 
@@ -177,8 +179,8 @@ class EnrichLeads extends Command
 
         $fields = array_filter([
             'company_size' => $data['job_company_size'] ?? null,
-            'industry'     => $data['job_company_industry'] ?? null,
-            'region'       => $region ?: null,
+            'industry' => $data['job_company_industry'] ?? null,
+            'region' => $region ?: null,
         ], fn ($v) => ! empty($v));
 
         $update = ['entity_type' => 'leads'];

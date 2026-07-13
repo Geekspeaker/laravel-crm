@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\LeadAiController;
 use Illuminate\Support\Facades\Route;
 use Webkul\Admin\Http\Controllers\Lead\ActivityController;
 use Webkul\Admin\Http\Controllers\Lead\EmailController;
@@ -25,7 +26,7 @@ Route::controller(LeadController::class)->prefix('leads')->group(function () {
     Route::put('attributes/edit/{id}', 'updateAttributes')->name('admin.leads.attributes.update');
 
     // Outreach Copilot: generate dossier + thesis fit + opener for a single lead.
-    Route::post('{id}/ai-draft', [\App\Http\Controllers\LeadAiController::class, 'draft'])->name('admin.leads.ai_draft');
+    Route::post('{id}/ai-draft', [LeadAiController::class, 'draft'])->name('admin.leads.ai_draft');
 
     Route::put('stage/edit/{id}', 'updateStage')->name('admin.leads.stage.update');
 

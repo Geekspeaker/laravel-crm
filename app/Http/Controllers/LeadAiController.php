@@ -16,8 +16,8 @@ class LeadAiController extends Controller
     public function draft($id)
     {
         $exit = Artisan::call('skimify:draft-opener', [
-            '--lead'   => $id,
-            '--force'  => true,
+            '--lead' => $id,
+            '--force' => true,
             '--no-web' => true,
         ]);
 

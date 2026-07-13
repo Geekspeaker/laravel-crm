@@ -237,7 +237,7 @@ class DraftOpener extends Command
             .'1) dossier: 3-5 tight bullet points on who they are and the single best reason Skimify fits THEM. '
             ."Ground it in the facts/website above; if unsure, say so — never fabricate.\n"
             ."2) thesis_fit: ONE sharp sentence on how Skimify maps to THIS target's thesis/mandate/audience "
-            ."(VC: their investing thesis; partner: audience/category fit; HR: the engagement pain). "
+            .'(VC: their investing thesis; partner: audience/category fit; HR: the engagement pain). '
             ."Ground it; if you can't tell, say 'insufficient public info'.\n"
             ."3) email_subject: <= 6 words, specific, no clickbait.\n"
             ."4) email_body: Golvis's voice — PUNCHY, 4 lines max, hook-first (line 1 = a pattern-break tied to the "

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\OutreachApiController;
+use App\Http\Middleware\VerifyCrmApiToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -24,8 +26,8 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 | App\Http\Controllers\OutreachApiController.
 */
 Route::prefix('outreach')
-    ->middleware([\App\Http\Middleware\VerifyCrmApiToken::class, 'throttle:60,1'])
+    ->middleware([VerifyCrmApiToken::class, 'throttle:60,1'])
     ->group(function () {
-        Route::post('leads/upsert', [\App\Http\Controllers\OutreachApiController::class, 'upsertLead']);
-        Route::post('touches', [\App\Http\Controllers\OutreachApiController::class, 'logTouch']);
+        Route::post('leads/upsert', [OutreachApiController::class, 'upsertLead']);
+        Route::post('touches', [OutreachApiController::class, 'logTouch']);
     });

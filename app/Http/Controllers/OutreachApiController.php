@@ -67,18 +67,18 @@ class OutreachApiController extends Controller
 
         if (! $person) {
             $person = $personRepository->create(array_filter(array_merge([
-                'name'              => $name,
-                'emails'            => [['value' => $email, 'label' => 'work']],
-                'job_title'         => $title ?: null,
+                'name' => $name,
+                'emails' => [['value' => $email, 'label' => 'work']],
+                'job_title' => $title ?: null,
                 'organization_name' => $company ?: null,
-                'user_id'           => $ownerId,
-                'entity_type'       => 'persons',
+                'user_id' => $ownerId,
+                'entity_type' => 'persons',
             ], $personAttrs), fn ($v) => ! is_null($v)));
         } elseif ($personAttrs || $title) {
             $update = array_merge($personAttrs, [
                 'entity_type' => 'persons',
-                'emails'      => [['value' => $email, 'label' => 'work']],
-                'user_id'     => $person->user_id,
+                'emails' => [['value' => $email, 'label' => 'work']],
+                'user_id' => $person->user_id,
             ]);
             $codes = array_keys($personAttrs);
 
@@ -110,16 +110,16 @@ class OutreachApiController extends Controller
 
         if (! $lead) {
             $lead = $leadRepository->create(array_merge([
-                'title'                  => $company ? "{$name} - {$company}" : $name,
-                'lead_value'             => 0,
-                'status'                 => 1,
-                'person_id'              => $person->id,
-                'lead_source_id'         => $sourceId,
-                'lead_type_id'           => 1,
-                'lead_pipeline_id'       => $pipelineId,
+                'title' => $company ? "{$name} - {$company}" : $name,
+                'lead_value' => 0,
+                'status' => 1,
+                'person_id' => $person->id,
+                'lead_source_id' => $sourceId,
+                'lead_type_id' => 1,
+                'lead_pipeline_id' => $pipelineId,
                 'lead_pipeline_stage_id' => $stageId,
-                'user_id'                => $ownerId,
-                'entity_type'            => 'leads',
+                'user_id' => $ownerId,
+                'entity_type' => 'leads',
             ], $leadAttrs));
         } else {
             $update = array_merge($leadAttrs, ['entity_type' => 'leads']);
@@ -136,10 +136,10 @@ class OutreachApiController extends Controller
         }
 
         return response()->json([
-            'action'    => $created ? 'created' : 'updated',
-            'lead_id'   => $lead->id,
+            'action' => $created ? 'created' : 'updated',
+            'lead_id' => $lead->id,
             'person_id' => $person->id,
-            'stage'     => $stageCode,
+            'stage' => $stageCode,
         ]);
     }
 
@@ -184,14 +184,14 @@ class OutreachApiController extends Controller
         $ownerId = $lead->user_id ?: DB::table('users')->orderBy('id')->value('id');
 
         $activity = $activityRepository->create([
-            'type'          => $type,
-            'title'         => '['.ucfirst($channel).' · '.$direction.'] '.$subject,
-            'comment'       => $note,
+            'type' => $type,
+            'title' => '['.ucfirst($channel).' · '.$direction.'] '.$subject,
+            'comment' => $note,
             'schedule_from' => $occurredAt,
-            'schedule_to'   => $occurredAt,
-            'is_done'       => 1,
-            'user_id'       => $ownerId,
-            'additional'    => json_encode(['channel' => $channel, 'direction' => $direction, 'dedupe' => $dedupe]),
+            'schedule_to' => $occurredAt,
+            'is_done' => 1,
+            'user_id' => $ownerId,
+            'additional' => json_encode(['channel' => $channel, 'direction' => $direction, 'dedupe' => $dedupe]),
         ]);
 
         $activity->leads()->attach($lead->id);
@@ -207,10 +207,10 @@ class OutreachApiController extends Controller
         }
 
         return response()->json([
-            'action'      => 'logged',
+            'action' => 'logged',
             'activity_id' => $activity->id,
-            'lead_id'     => $lead->id,
-            'stage'       => $newStage,
+            'lead_id' => $lead->id,
+            'stage' => $newStage,
         ]);
     }
 
@@ -222,7 +222,7 @@ class OutreachApiController extends Controller
         }
 
         return (int) DB::table('lead_sources')->insertGetId([
-            'name'       => $name,
+            'name' => $name,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

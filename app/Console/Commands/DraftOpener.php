@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Webkul\Lead\Models\Lead;
 use Webkul\Lead\Repositories\LeadRepository;
@@ -75,12 +76,12 @@ class DraftOpener extends Command
         }
 
         if ($sourceName = $this->option('source')) {
-            $sourceId = \Illuminate\Support\Facades\DB::table('lead_sources')->where('name', $sourceName)->value('id');
+            $sourceId = DB::table('lead_sources')->where('name', $sourceName)->value('id');
             $query->where('lead_source_id', $sourceId ?: 0);
         }
 
         if ($stageCode = $this->option('stage')) {
-            $stageId = \Illuminate\Support\Facades\DB::table('lead_pipeline_stages')->where('code', $stageCode)->value('id');
+            $stageId = DB::table('lead_pipeline_stages')->where('code', $stageCode)->value('id');
             $query->where('lead_pipeline_stage_id', $stageId ?: 0);
         }
 
@@ -101,6 +102,7 @@ class DraftOpener extends Command
 
             if (! $force && ! empty($lead->ai_draft)) {
                 $skipped++;
+
                 continue;
             }
 
@@ -110,6 +112,7 @@ class DraftOpener extends Command
 
                 if (! $result) {
                     $errors++;
+
                     continue;
                 }
 
@@ -117,8 +120,8 @@ class DraftOpener extends Command
 
                 $leadRepository->update([
                     'entity_type' => 'leads',
-                    'ai_dossier'  => $result['dossier'] ?? '',
-                    'ai_draft'    => $draft,
+                    'ai_dossier' => $result['dossier'] ?? '',
+                    'ai_draft' => $draft,
                 ], $lead->id, ['ai_dossier', 'ai_draft']);
 
                 $this->line("  ✓ #{$lead->id} {$lead->title}");
@@ -160,13 +163,13 @@ class DraftOpener extends Command
         }
 
         return [
-            'name'     => $person?->name ?? '',
-            'title'    => $person?->job_title ?? '',
-            'company'  => $company,
-            'email'    => $email,
+            'name' => $person?->name ?? '',
+            'title' => $person?->job_title ?? '',
+            'company' => $company,
+            'email' => $email,
             'linkedin' => $person?->linkedin ?? '',
-            'segment'  => $segment,
-            'website'  => $website,
+            'segment' => $segment,
+            'website' => $website,
         ];
     }
 
@@ -223,7 +226,7 @@ class DraftOpener extends Command
             ."- Segment angle: {$angle}\n"
             .($ctx['website'] ? "\nFIRM WEBSITE TEXT (for grounding — cite only what's here, don't invent):\n{$ctx['website']}\n" : '')
             ."\nTASKS:\n"
-            ."1) dossier: 3-5 tight bullet points on who they are and the single best reason Skimify fits THEM. "
+            .'1) dossier: 3-5 tight bullet points on who they are and the single best reason Skimify fits THEM. '
             ."Ground it in the facts/website above; if unsure, say so — never fabricate.\n"
             ."2) email_subject: <= 6 words, specific, no clickbait.\n"
             ."3) email_body: Golvis's voice — PUNCHY, 4 lines max, hook-first (line 1 = a pattern-break tied to the "
@@ -234,9 +237,9 @@ class DraftOpener extends Command
         try {
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer '.$apiKey,
-                'Content-Type'  => 'application/json',
+                'Content-Type' => 'application/json',
             ])->timeout(60)->post(rtrim($domain, '/').'/chat/completions', [
-                'model'    => $model,
+                'model' => $model,
                 'messages' => [
                     ['role' => 'system', 'content' => "You are an outreach copilot for a pre-revenue startup. Be specific, grounded, and never invent metrics.\n\n".$this->companyContext],
                     ['role' => 'user', 'content' => $user],

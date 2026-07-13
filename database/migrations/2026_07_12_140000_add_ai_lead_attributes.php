@@ -20,22 +20,22 @@ return new class extends Migration
 
         foreach ([
             'ai_dossier' => ['name' => 'AI Dossier', 'sort' => 40],
-            'ai_draft'   => ['name' => 'AI Draft Opener', 'sort' => 41],
+            'ai_draft' => ['name' => 'AI Draft Opener', 'sort' => 41],
         ] as $code => $meta) {
             DB::table('attributes')->insertOrIgnore([
-                'code'            => $code,
-                'name'            => $meta['name'],
-                'type'            => 'textarea',
-                'entity_type'     => 'leads',
-                'lookup_type'     => null,
-                'validation'      => null,
-                'sort_order'      => $meta['sort'],
-                'is_required'     => 0,
-                'is_unique'       => 0,
-                'quick_add'       => 0,
+                'code' => $code,
+                'name' => $meta['name'],
+                'type' => 'textarea',
+                'entity_type' => 'leads',
+                'lookup_type' => null,
+                'validation' => null,
+                'sort_order' => $meta['sort'],
+                'is_required' => 0,
+                'is_unique' => 0,
+                'quick_add' => 0,
                 'is_user_defined' => 1,
-                'created_at'      => $now,
-                'updated_at'      => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
     }

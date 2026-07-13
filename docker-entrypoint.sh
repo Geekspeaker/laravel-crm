@@ -67,6 +67,10 @@ MAIL_ENCRYPTION="${MAIL_ENCRYPTION}"
 MAIL_FROM_ADDRESS="${MAIL_FROM_ADDRESS:-golvis@geekspeaker.com}"
 MAIL_FROM_NAME="${MAIL_FROM_NAME:-Skimify CRM}"
 
+# Inbound email processor: IMAP (not the default 'sendgrid'). Reads the IMAP
+# account from the admin Configuration -> Email -> IMAP page.
+MAIL_RECEIVER_DRIVER="${MAIL_RECEIVER_DRIVER:-webklex-imap}"
+
 IMAP_HOST="${IMAP_HOST}"
 IMAP_PORT="${IMAP_PORT:-993}"
 IMAP_ENCRYPTION="${IMAP_ENCRYPTION:-ssl}"

@@ -22,6 +22,12 @@ echo "[entrypoint] Writing .env from runtime environment..."
 DB_PREFIX="$(printf '%s' "${DB_PREFIX:-}" | tr -d '"')"
 export DB_PREFIX
 
+# QUEUE_CONNECTION sometimes gets pasted with an inline comment (e.g.
+# "database # no Redis") from the deploy doc, which breaks the queue worker with
+# "queue connection has not been configured". Keep only the first token.
+QUEUE_CONNECTION="$(printf '%s' "${QUEUE_CONNECTION:-database}" | awk '{print $1}')"
+export QUEUE_CONNECTION
+
 # IMPORTANT: values are written UNQUOTED except the two that contain spaces
 # (APP_NAME, MAIL_FROM_NAME). Reason: Krayin's installer (krayin-crm:install)
 # parses .env with a naive explode('=') in getEnvAtRuntime() and does NOT strip

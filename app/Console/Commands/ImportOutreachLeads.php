@@ -42,7 +42,15 @@ class ImportOutreachLeads extends Command
     private array $fields = [
         'first_name', 'last_name', 'full_name', 'email', 'phone',
         'job_title', 'company', 'linkedin', 'x_handle', 'website',
-        'alt_emails', 'fit_score', 'notes', 'ignore',
+        'alt_emails', 'fit_score', 'fund_stage', 'check_size', 'thesis_fit',
+        'affiliate_network', 'category', 'payout_model', 'company_size',
+        'industry', 'region', 'priority', 'notes', 'ignore',
+    ];
+
+    /** Custom attribute codes that live on the Lead entity. */
+    private array $leadAttributeFields = [
+        'fit_score', 'fund_stage', 'check_size', 'thesis_fit', 'affiliate_network',
+        'category', 'payout_model', 'company_size', 'industry', 'region', 'priority',
     ];
 
     public function handle(
@@ -176,13 +184,16 @@ class ImportOutreachLeads extends Command
 
                 if ($existingLead) {
                     if ($update) {
-                        // Backfill: clear the old description dump + set fit_score.
+                        // Backfill: clear the old description dump + set any present
+                        // lead custom attributes (fit_score, fund_stage, ...).
                         $leadData = ['entity_type' => 'leads', 'description' => $data['notes'] ?? ''];
                         $leadCodes = ['description'];
 
-                        if (! empty($data['fit_score'])) {
-                            $leadData['fit_score'] = $data['fit_score'];
-                            $leadCodes[] = 'fit_score';
+                        foreach ($this->leadAttributeFields as $f) {
+                            if (! empty($data[$f])) {
+                                $leadData[$f] = $data[$f];
+                                $leadCodes[] = $f;
+                            }
                         }
 
                         $leadRepository->update($leadData, $existingLead->id, $leadCodes);
@@ -194,10 +205,9 @@ class ImportOutreachLeads extends Command
                     continue;
                 }
 
-                $leadRepository->create([
+                $leadData = [
                     'title' => $company ? "{$name} - {$company}" : $name,
                     'description' => $data['notes'] ?? null,
-                    'fit_score' => $data['fit_score'] ?? null,
                     'lead_value' => 0,
                     'status' => 1,
                     'person_id' => $person->id,
@@ -207,7 +217,15 @@ class ImportOutreachLeads extends Command
                     'lead_pipeline_stage_id' => $stageId,
                     'user_id' => $ownerId,
                     'entity_type' => 'leads',
-                ]);
+                ];
+
+                foreach ($this->leadAttributeFields as $f) {
+                    if (! empty($data[$f])) {
+                        $leadData[$f] = $data[$f];
+                    }
+                }
+
+                $leadRepository->create($leadData);
 
                 $created++;
             } catch (\Throwable $e) {
@@ -338,6 +356,16 @@ class ImportOutreachLeads extends Command
             'website' => ['website', 'web', 'url', 'site', 'homepage'],
             'alt_emails' => ['altemails', 'alternateemails', 'allemails', 'otheremails', 'secondaryemail'],
             'fit_score' => ['fitscore', 'fit', 'score'],
+            'fund_stage' => ['fundstage', 'stage', 'stagefocus', 'investmentstage', 'round'],
+            'check_size' => ['checksize', 'check', 'ticket', 'ticketsize', 'investmentsize'],
+            'thesis_fit' => ['thesisfit', 'thesis', 'fitnotes'],
+            'affiliate_network' => ['affiliatenetwork', 'network', 'affiliate', 'platform'],
+            'category' => ['category', 'vertical', 'segmentcategory'],
+            'payout_model' => ['payoutmodel', 'payout', 'commission', 'commissionmodel', 'cpamodel'],
+            'company_size' => ['companysize', 'headcount', 'employees', 'employeecount', 'size'],
+            'industry' => ['industry', 'sector'],
+            'region' => ['region', 'location', 'geo', 'country', 'market'],
+            'priority' => ['priority', 'tier', 'rank'],
             'notes' => ['notes', 'note', 'description', 'comment', 'comments', 'leadsource', 'leadstatus'],
         ];
 

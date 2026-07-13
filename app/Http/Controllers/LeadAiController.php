@@ -2,29 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateLeadOpener;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Artisan;
 
 /**
- * Triggers the Outreach Copilot (skimify:draft-opener) for a single lead from the
- * dashboard "AI Draft" button. Runs synchronously (no queue worker in this deploy),
- * so it's called with --no-web to stay fast and avoid blocking the single-threaded
- * server; the bulk CLI run can use website grounding.
+ * Kicks off the Outreach Copilot for a single lead from the dashboard "AI Draft"
+ * button. Dispatches to the queue and returns immediately so the single-threaded web
+ * server never blocks on the AI call (which was causing 503s). The queue worker
+ * generates the dossier / thesis fit / opener in the background.
  */
 class LeadAiController extends Controller
 {
     public function draft($id)
     {
-        $exit = Artisan::call('skimify:draft-opener', [
-            '--lead' => $id,
-            '--force' => true,
-            '--no-web' => true,
-        ]);
+        GenerateLeadOpener::dispatch((int) $id, useWeb: true);
 
         return response()->json([
-            'message' => $exit === 0
-                ? 'AI dossier, thesis fit, and draft opener generated.'
-                : 'AI generation finished with issues — check the fields or logs.',
+            'message' => 'Generating the AI dossier + opener in the background — refresh in ~30s.',
         ]);
     }
 }

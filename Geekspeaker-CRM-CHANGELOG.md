@@ -76,8 +76,12 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
   website. Saved to `ai_dossier` / `thesis_fit` / `ai_draft` for review — never
   auto-sent. Flags: `--lead`, `--source`, `--stage`, `--limit`, `--force`, `--no-web`.
 - **In-dashboard "✨ AI Draft" button** on the lead view (About Lead panel):
-  `POST admin/leads/{id}/ai-draft` → `LeadAiController` runs the copilot for that lead
-  (synchronously, `--no-web` for speed since there's no queue worker) and reloads.
+  `POST admin/leads/{id}/ai-draft` → `LeadAiController` **dispatches `GenerateLeadOpener`
+  to the queue** and returns instantly (the button then auto-refreshes ~30s later).
+  Runs off the request thread so the single-threaded server never blocks → no more 503.
+  Because it's async it uses website grounding.
+- Added a **background `queue:work`** to the entrypoint (database driver) to process
+  those jobs (and any future queued work).
 - Dropped the `temperature` param from all AI calls (reasoning models only allow the
   default).
 
@@ -100,10 +104,9 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 
 - **SMTP port:** `MAIL_PORT` must be `465` (ssl) or `587` (tls) — a `456` typo caused a
   send hang / 503. (Env-var fix on Northflank.)
-- **Outgoing queue worker:** mail still sends synchronously on the single-threaded
-  `serve`, so a slow SMTP send briefly blocks the server. A queue worker (`queue:work`)
-  + `QUEUE_CONNECTION` for mail would offload it. (Inbound is already async via the
-  scheduler.)
+- **Queue outgoing mail:** a background `queue:work` now runs, so outgoing mail could be
+  queued (currently still sends synchronously on `serve`). Route the mailer to the queue
+  to stop slow SMTP sends briefly blocking the web server.
 - **Alt-emails matching:** the inbound relevance filter matches a person's primary
   emails only, not the `alt_emails` field — extend if replies come from alternates.
 - **Edit form scoping:** the lead *edit* form still shows all segment fields (only the

@@ -118,4 +118,10 @@ php artisan migrate --force || echo "[entrypoint] WARNING: migrate --force faile
 echo "[entrypoint] Starting scheduler (inbound email sync)..."
 php artisan schedule:work >/dev/null 2>&1 &
 
+# Background queue worker (database driver) so dashboard-triggered AI generation and
+# other queued jobs run OFF the request thread — the web server is single-threaded, so
+# a synchronous AI call would block it and time out (503).
+echo "[entrypoint] Starting queue worker..."
+php artisan queue:work --sleep=3 --tries=1 --timeout=180 >/dev/null 2>&1 &
+
 exec php artisan serve --host=0.0.0.0 --port=8000

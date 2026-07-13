@@ -136,7 +136,9 @@
                                 message: response.data.message,
                             });
 
-                            window.location.reload();
+                            // The job runs on the queue; give it time, then refresh
+                            // so the generated fields show. Re-click if not ready yet.
+                            setTimeout(() => window.location.reload(), 30000);
                         })
                         .catch((error) => {
                             this.$emitter.emit('add-flash', {

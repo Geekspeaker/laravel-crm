@@ -29,10 +29,12 @@ Spec: `.kiro/specs/crm-gtm-upgrade`.
 - **Stale-lead nudge** (`skimify:flag-stale-leads`, scheduled daily 09:00): tags open leads
   (not won/lost) with no activity for N days (default 14) as `stale` so they resurface.
   Idempotent; time-based so it's a scheduled command, not a workflow. `--days`, `--dry-run`.
-- Still pending in Phase 3: WebForm inbound capture (3.5/3.6) + stage-on-reply / auto-assign
-  (3.8/3.9). WebForm needs a source/pipeline column + submit-controller routing (the native
-  `web_forms` table has no source/pipeline field); auto-assign is largely covered already
-  (API/importer/UI creation all set an owner) and pairs with WebForm.
+- **Stage-on-reply** (`WebklexImapEmailProcessor::advanceLeadOnReply`): an inbound reply
+  from a known contact advances their lead off the first pipeline stage to the next
+  ("engaged") stage. Inbox-only, idempotent (only moves a lead still on its first stage),
+  best-effort (never breaks inbound sync).
+- Still pending in Phase 3: WebForm inbound capture (3.5/3.6). Auto-assign (3.9) is already
+  covered (API/importer/UI creation all set an owner) and pairs with WebForm.
 
 ### GTM upgrade Phase 2 (routing) — per-segment pipelines + source routing
 Spec: `.kiro/specs/crm-gtm-upgrade`.

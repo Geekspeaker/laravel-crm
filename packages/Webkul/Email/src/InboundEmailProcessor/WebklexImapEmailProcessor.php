@@ -177,6 +177,71 @@ class WebklexImapEmailProcessor implements InboundEmailProcessor
                 'attachments' => $message->getAttachments(),
             ]);
         }
+
+        // GTM upgrade Phase 3 (3.8): an inbound reply from a known contact advances
+        // their lead off the first pipeline stage. Inbox-only; best-effort.
+        if ($fromKnown && $folderName === SupportedFolderEnum::INBOX->value) {
+            $this->advanceLeadOnReply($fromEmail);
+        }
+    }
+
+    /**
+     * When a known contact replies (inbound), advance their lead from the first
+     * pipeline stage to the next ("engaged") stage. Only moves a lead still on its
+     * pipeline's first stage — so it's idempotent, never moves a lead backward, and
+     * leaves already-progressed leads alone. Best-effort: never breaks inbound sync.
+     */
+    protected function advanceLeadOnReply(?string $fromEmail): void
+    {
+        try {
+            $email = trim((string) $fromEmail);
+            if ($email === '') {
+                return;
+            }
+
+            $person = Person::query()
+                ->whereJsonContains('emails', [['value' => $email]])
+                ->orWhereJsonContains('emails', [['value' => strtolower($email)]])
+                ->first();
+
+            if (! $person) {
+                return;
+            }
+
+            $leads = DB::table('leads')
+                ->where('person_id', $person->id)
+                ->get(['id', 'lead_pipeline_id', 'lead_pipeline_stage_id']);
+
+            foreach ($leads as $lead) {
+                $currentOrder = DB::table('lead_pipeline_stages')
+                    ->where('id', $lead->lead_pipeline_stage_id)
+                    ->value('sort_order');
+
+                $firstOrder = DB::table('lead_pipeline_stages')
+                    ->where('lead_pipeline_id', $lead->lead_pipeline_id)
+                    ->min('sort_order');
+
+                // Only advance a lead that's still at the very first stage.
+                if ($currentOrder === null || (int) $currentOrder !== (int) $firstOrder) {
+                    continue;
+                }
+
+                $nextId = DB::table('lead_pipeline_stages')
+                    ->where('lead_pipeline_id', $lead->lead_pipeline_id)
+                    ->where('sort_order', '>', $firstOrder)
+                    ->orderBy('sort_order')
+                    ->value('id');
+
+                if ($nextId) {
+                    DB::table('leads')->where('id', $lead->id)->update([
+                        'lead_pipeline_stage_id' => $nextId,
+                        'updated_at'             => now(),
+                    ]);
+                }
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('advanceLeadOnReply failed: '.$e->getMessage());
+        }
     }
 
     /**

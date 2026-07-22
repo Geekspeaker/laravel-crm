@@ -1856,8 +1856,8 @@ return [
             'details-info' => 'Put The Basic Information of the Lead',
             'contact-person' => 'Contact Person',
             'contact-info' => 'Information About the Contact Person',
-            'products' => 'Products',
-            'products-info' => 'Information About the Products',
+            'products' => 'Collateral',
+            'products-info' => 'Collateral sent to this lead',
         ],
         'edit' => [
             'title' => 'Edit Lead',
@@ -1866,8 +1866,8 @@ return [
             'details-info' => 'Put The Basic Information of the Lead',
             'contact-person' => 'Contact Person',
             'contact-info' => 'Information About the Contact Person',
-            'products' => 'Products',
-            'products-info' => 'Information About the Products',
+            'products' => 'Collateral',
+            'products-info' => 'Collateral sent to this lead',
         ],
         'common' => [
             'contact' => [
@@ -1892,8 +1892,8 @@ return [
             'rotten-days' => ':days Days',
             'tabs' => [
                 'description' => 'Description',
-                'products' => 'Products',
-                'quotes' => 'Quotes',
+                'products' => 'Collateral',
+                'quotes' => 'Proposals',
             ],
             'attributes' => [
                 'title' => 'About Lead',
@@ -2179,8 +2179,8 @@ return [
         'dashboard' => 'Dashboard',
         'help' => 'Help & Resources',
         'leads' => 'Leads',
-        'quotes' => 'Quotes',
-        'quote' => 'Quote',
+        'quotes' => 'Proposals',
+        'quote' => 'Proposal',
         'mail' => [
             'title' => 'Mail',
             'compose' => 'Compose',
@@ -2197,8 +2197,8 @@ return [
         'person' => 'Person',
         'organizations' => 'Organizations',
         'organization' => 'Organization',
-        'products' => 'Products',
-        'product' => 'Product',
+        'products' => 'Collateral',
+        'product' => 'Collateral',
         'settings' => 'Settings',
         'user' => 'User',
         'user-info' => 'Manage all your users and their permissions in the CRM, what they’re allowed to do.',

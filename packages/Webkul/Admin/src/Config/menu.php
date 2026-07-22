@@ -192,20 +192,8 @@ return [
         'sort' => 3,
         'icon-class' => 'icon-settings-type',
     ], [
-        'key' => 'settings.inventory',
-        'name' => 'admin::app.layouts.inventory',
-        'info' => 'admin::app.layouts.inventory-info',
-        'route' => 'admin.settings.pipelines.index',
-        'icon-class' => '',
-        'sort' => 2,
-    ], [
-        'key' => 'settings.inventory.warehouse',
-        'name' => 'admin::app.layouts.warehouses',
-        'info' => 'admin::app.layouts.warehouses-info',
-        'route' => 'admin.settings.warehouses.index',
-        'sort' => 1,
-        'icon-class' => 'icon-settings-warehouse',
-    ], [
+        // Warehouse/Inventory hidden — not relevant to partner outreach (CRM GTM
+        // upgrade, Phase 1). Module remains installed; nav entry removed only.
         'key' => 'settings.automation',
         'name' => 'admin::app.layouts.automation',
         'info' => 'admin::app.layouts.automation-info',

@@ -11,6 +11,25 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 
 ---
 
+## 2026-07-18
+
+### GTM upgrade Phase 1 — declutter (`menu.php`, admin `en` lang)
+Spec: `.kiro/specs/crm-gtm-upgrade` (see `spec-log.md`).
+- **Hid Warehouse** from the nav (removed the `settings.inventory` +
+  `settings.inventory.warehouse` menu entries). Module + tables remain installed —
+  reversible; nav-only change.
+- **Relabeled Products → "Collateral"** and **Quotes → "Proposals"** by changing the
+  values of the top-level `layouts` nav keys the menu points at (`layouts.products/quotes`
+  + singular `product/quote`). No keys added/removed → lang-parity untouched. Relabeled
+  `en` only (the container's active locale); other locales keep translated values (parity
+  is key-based).
+- Relabeled the lead **create/edit "Products" section** and the lead **view tabs**
+  (Products→Collateral, Quotes→Proposals) in `en`.
+- No schema changes, no core logic changes. Sets up Phase 2 (per-segment pipelines +
+  Collateral/Proposals seed).
+
+---
+
 ## 2026-07-13
 
 ### Outreach write API — alternate-key identity (`OutreachApiController`)

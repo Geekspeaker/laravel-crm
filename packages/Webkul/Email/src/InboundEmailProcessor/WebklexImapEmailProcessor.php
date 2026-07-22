@@ -4,6 +4,7 @@ namespace Webkul\Email\InboundEmailProcessor;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Webklex\IMAP\Facades\Client;
 use Webklex\IMAP\Support\FolderCollection;
 use Webklex\PHPIMAP\Message;
@@ -235,12 +236,12 @@ class WebklexImapEmailProcessor implements InboundEmailProcessor
                 if ($nextId) {
                     DB::table('leads')->where('id', $lead->id)->update([
                         'lead_pipeline_stage_id' => $nextId,
-                        'updated_at'             => now(),
+                        'updated_at' => now(),
                     ]);
                 }
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('advanceLeadOnReply failed: '.$e->getMessage());
+            Log::warning('advanceLeadOnReply failed: '.$e->getMessage());
         }
     }
 

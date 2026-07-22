@@ -16,12 +16,12 @@ return new class extends Migration
 {
     /** name => color (hex). */
     private array $tags = [
-        'warm-intro'      => '#F3BF3F',
-        'inbound'         => '#2DB4A0',
-        'met-at-event'    => '#7C5FB0',
-        'portfolio-fit'   => '#341C5B',
-        'champion'        => '#1F9D6B',
-        'decision-maker'  => '#E5604D',
+        'warm-intro' => '#F3BF3F',
+        'inbound' => '#2DB4A0',
+        'met-at-event' => '#7C5FB0',
+        'portfolio-fit' => '#341C5B',
+        'champion' => '#1F9D6B',
+        'decision-maker' => '#E5604D',
     ];
 
     public function up(): void
@@ -40,9 +40,9 @@ return new class extends Migration
             }
 
             DB::table('tags')->insert([
-                'name'       => $name,
-                'color'      => $color,
-                'user_id'    => $userId,
+                'name' => $name,
+                'color' => $color,
+                'user_id' => $userId,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);

@@ -20,16 +20,16 @@ return new class extends Migration
 {
     /** code => [name, type]. */
     private array $attributes = [
-        'warm_intro_path'      => ['Warm Intro Path', 'text'],
-        'seats_or_students'    => ['Seats / Students', 'text'],
-        'edu_semester'         => ['Academic Term', 'text'],
-        'ferpa_flag'           => ['FERPA Sensitive', 'boolean'],
-        'domain'               => ['Domain', 'text'],
-        'feed_type'            => ['Feed / CMS Type', 'text'],
-        'monthly_traffic'      => ['Monthly Traffic', 'text'],
+        'warm_intro_path' => ['Warm Intro Path', 'text'],
+        'seats_or_students' => ['Seats / Students', 'text'],
+        'edu_semester' => ['Academic Term', 'text'],
+        'ferpa_flag' => ['FERPA Sensitive', 'boolean'],
+        'domain' => ['Domain', 'text'],
+        'feed_type' => ['Feed / CMS Type', 'text'],
+        'monthly_traffic' => ['Monthly Traffic', 'text'],
         'outbound_clicks_sent' => ['Outbound Clicks Sent', 'text'],
-        'audience_fit'         => ['Audience Fit', 'text'],
-        'compliance_flag'      => ['Compliance Reviewed', 'boolean'],
+        'audience_fit' => ['Audience Fit', 'text'],
+        'compliance_flag' => ['Compliance Reviewed', 'boolean'],
     ];
 
     public function up(): void
@@ -39,19 +39,19 @@ return new class extends Migration
 
         foreach ($this->attributes as $code => [$name, $type]) {
             DB::table('attributes')->insertOrIgnore([
-                'code'            => $code,
-                'name'            => $name,
-                'type'            => $type,
-                'entity_type'     => 'leads',
-                'lookup_type'     => null,
-                'validation'      => null,
-                'sort_order'      => $sort++,
-                'is_required'     => 0,
-                'is_unique'       => 0,
-                'quick_add'       => 0,
+                'code' => $code,
+                'name' => $name,
+                'type' => $type,
+                'entity_type' => 'leads',
+                'lookup_type' => null,
+                'validation' => null,
+                'sort_order' => $sort++,
+                'is_required' => 0,
+                'is_unique' => 0,
+                'quick_add' => 0,
                 'is_user_defined' => 1,
-                'created_at'      => $now,
-                'updated_at'      => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
     }

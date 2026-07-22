@@ -33,6 +33,9 @@ class OutreachApiController extends Controller
     private array $leadAttributeFields = [
         'fit_score', 'fund_stage', 'check_size', 'thesis_fit', 'affiliate_network',
         'category', 'payout_model', 'company_size', 'industry', 'region', 'priority',
+        'warm_intro_path', 'seats_or_students', 'edu_semester', 'ferpa_flag',
+        'domain', 'feed_type', 'monthly_traffic', 'outbound_clicks_sent',
+        'audience_fit', 'compliance_flag',
     ];
 
     /** Custom attribute codes that live on the Person. */

@@ -45,13 +45,20 @@ class ImportOutreachLeads extends Command
         'job_title', 'company', 'linkedin', 'x_handle', 'website',
         'alt_emails', 'fit_score', 'fund_stage', 'check_size', 'thesis_fit',
         'affiliate_network', 'category', 'payout_model', 'company_size',
-        'industry', 'region', 'priority', 'notes', 'ignore',
+        'industry', 'region', 'priority',
+        'warm_intro_path', 'seats_or_students', 'edu_semester', 'ferpa_flag',
+        'domain', 'feed_type', 'monthly_traffic', 'outbound_clicks_sent',
+        'audience_fit', 'compliance_flag',
+        'notes', 'ignore',
     ];
 
     /** Custom attribute codes that live on the Lead entity. */
     private array $leadAttributeFields = [
         'fit_score', 'fund_stage', 'check_size', 'thesis_fit', 'affiliate_network',
         'category', 'payout_model', 'company_size', 'industry', 'region', 'priority',
+        'warm_intro_path', 'seats_or_students', 'edu_semester', 'ferpa_flag',
+        'domain', 'feed_type', 'monthly_traffic', 'outbound_clicks_sent',
+        'audience_fit', 'compliance_flag',
     ];
 
     public function handle(

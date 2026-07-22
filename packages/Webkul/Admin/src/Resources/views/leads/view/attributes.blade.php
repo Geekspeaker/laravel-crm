@@ -39,9 +39,10 @@
                 // generates it for every segment, so it stays visible for all leads
                 // (only its label changes for non-VCs, below).
                 $segmentCodes = [
-                    'vc'      => ['fund_stage', 'check_size'],
-                    'partner' => ['affiliate_network', 'category', 'payout_model'],
-                    'hr'      => ['company_size', 'industry', 'region'],
+                    'vc'        => ['fund_stage', 'check_size', 'warm_intro_path'],
+                    'partner'   => ['affiliate_network', 'category', 'payout_model', 'audience_fit', 'compliance_flag'],
+                    'hr'        => ['company_size', 'industry', 'region', 'seats_or_students', 'edu_semester', 'ferpa_flag'],
+                    'publisher' => ['domain', 'feed_type', 'monthly_traffic', 'outbound_clicks_sent'],
                 ];
 
                 $sourceName = strtolower(optional($lead->source)->name ?? '');
@@ -52,6 +53,8 @@
                     $activeSegment = 'partner';
                 } elseif (str_contains($sourceName, 'hr') || str_contains($sourceName, 'work') || str_contains($sourceName, 'edu') || str_contains($sourceName, 'people')) {
                     $activeSegment = 'hr';
+                } elseif (str_contains($sourceName, 'publish')) {
+                    $activeSegment = 'publisher';
                 } else {
                     $activeSegment = null;
                 }

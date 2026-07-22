@@ -13,6 +13,21 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 
 ## 2026-07-18
 
+### GTM upgrade Phase 3 (partial) — segment fields + tags
+Spec: `.kiro/specs/crm-gtm-upgrade`.
+- **New attributes** (`2026_07_18_140000_add_segment_v2_attributes.php`): `warm_intro_path`
+  (VC); `seats_or_students`, `edu_semester`, `ferpa_flag` (HR/EDU); `domain`, `feed_type`,
+  `monthly_traffic`, `outbound_clicks_sent` (Publisher); `audience_fit`, `compliance_flag`
+  (Brand). Idempotent; booleans for the two flags.
+- **Publisher segment** added to the source-scoped read + edit views (source contains
+  "publish"); each segment now shows its full signature field set.
+- **Write API + importer** field maps extended with the new codes (importer canonical list
+  + fuzzy-mappable).
+- **Starter tags** seeded (`2026_07_18_150000_seed_starter_tags.php`): warm-intro, inbound,
+  met-at-event, portfolio-fit, champion, decision-maker (idempotent by name; owner = first
+  user).
+- Still pending in Phase 3: WebForm inbound capture (3.5/3.6) + Automation rules (3.7–3.9).
+
 ### GTM upgrade Phase 2 (routing) — per-segment pipelines + source routing
 Spec: `.kiro/specs/crm-gtm-upgrade`.
 - **New migration** `2026_07_18_120000_seed_segment_pipelines.php`: seeds 4 GTM pipelines

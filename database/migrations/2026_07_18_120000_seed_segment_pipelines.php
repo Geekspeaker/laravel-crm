@@ -65,11 +65,11 @@ return new class extends Migration
 
         foreach ($this->pipelines as $pipelineName => $stages) {
             DB::table('lead_pipelines')->insertOrIgnore([
-                'name'        => $pipelineName,
-                'is_default'  => 0,
+                'name' => $pipelineName,
+                'is_default' => 0,
                 'rotten_days' => 30,
-                'created_at'  => $now,
-                'updated_at'  => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
 
             $pipelineId = DB::table('lead_pipelines')->where('name', $pipelineName)->value('id');
@@ -80,10 +80,10 @@ return new class extends Migration
             $count = count($stages);
             foreach ($stages as $i => [$code, $name]) {
                 DB::table('lead_pipeline_stages')->insertOrIgnore([
-                    'code'             => $code,
-                    'name'             => $name,
-                    'probability'      => $this->probabilityFor($code, $i, $count),
-                    'sort_order'       => $i + 1,
+                    'code' => $code,
+                    'name' => $name,
+                    'probability' => $this->probabilityFor($code, $i, $count),
+                    'sort_order' => $i + 1,
                     'lead_pipeline_id' => $pipelineId,
                 ]);
             }
@@ -91,7 +91,7 @@ return new class extends Migration
 
         // Ensure the Publisher lead source exists (VC / HR / Reward Partner already do).
         DB::table('lead_sources')->insertOrIgnore([
-            'name'       => 'Publisher',
+            'name' => 'Publisher',
             'created_at' => $now,
             'updated_at' => $now,
         ]);

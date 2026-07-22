@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\PipelineResolver;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -103,12 +104,12 @@ class ImportOutreachLeads extends Command
 
         // Route to the segment's pipeline + first stage (unknown source → default
         // pipeline 1 / 'new'). An explicit --stage wins only if it exists on that pipeline.
-        $route = \App\Support\PipelineResolver::forSource($sourceName);
+        $route = PipelineResolver::forSource($sourceName);
         $pipelineId = $route['pipeline_id'];
         $stageId = $route['stage_id'];
 
         if ($this->option('stage')) {
-            $overrideId = \App\Support\PipelineResolver::stageId($pipelineId, $this->option('stage'));
+            $overrideId = PipelineResolver::stageId($pipelineId, $this->option('stage'));
             if ($overrideId) {
                 $stageId = $overrideId;
             }

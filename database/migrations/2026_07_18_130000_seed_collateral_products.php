@@ -16,11 +16,11 @@ return new class extends Migration
 {
     /** sku => [name, description]. */
     private array $collateral = [
-        'COLL-VC-DECK'        => ['VC Deck', 'Skimify investor pitch deck (VC / Investors).'],
-        'COLL-PUB-DECK'       => ['Publisher Deck', 'Publisher partnership deck.'],
-        'COLL-PUB-VALUE'      => ['Publisher Value Report', 'Outbound-clicks value report shared with a publisher.'],
-        'COLL-HR-ONEPAGER'    => ['HR One-Pager', 'Work / Edu HR one-pager.'],
-        'COLL-EDU-DECK'       => ['EDU Deck', 'Student-Services / EDU deck.'],
+        'COLL-VC-DECK' => ['VC Deck', 'Skimify investor pitch deck (VC / Investors).'],
+        'COLL-PUB-DECK' => ['Publisher Deck', 'Publisher partnership deck.'],
+        'COLL-PUB-VALUE' => ['Publisher Value Report', 'Outbound-clicks value report shared with a publisher.'],
+        'COLL-HR-ONEPAGER' => ['HR One-Pager', 'Work / Edu HR one-pager.'],
+        'COLL-EDU-DECK' => ['EDU Deck', 'Student-Services / EDU deck.'],
         'COLL-BRAND-ONEPAGER' => ['Offer-wall One-Pager', 'Brand / offer-wall partnership one-pager.'],
     ];
 
@@ -30,13 +30,13 @@ return new class extends Migration
 
         foreach ($this->collateral as $sku => [$name, $description]) {
             DB::table('products')->insertOrIgnore([
-                'sku'         => $sku,
-                'name'        => $name,
+                'sku' => $sku,
+                'name' => $name,
                 'description' => $description,
-                'quantity'    => 1,      // collateral isn't inventory; keep it "available"
-                'price'       => 0,
-                'created_at'  => $now,
-                'updated_at'  => $now,
+                'quantity' => 1,      // collateral isn't inventory; keep it "available"
+                'price' => 0,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
     }

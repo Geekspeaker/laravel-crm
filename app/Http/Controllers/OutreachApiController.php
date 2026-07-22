@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\PipelineResolver;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -65,10 +66,24 @@ class OutreachApiController extends Controller
         $name = $rawName !== '' ? $rawName : $this->fallbackName($hasEmail, $email, $company, $linkedin);
 
         $ownerId = DB::table('users')->orderBy('id')->value('id');
-        $sourceId = $this->resolveSource($data['source'] ?? 'Direct');
-        $pipelineId = 1;
-        $stageCode = in_array($data['stage'] ?? '', $this->validStages, true) ? $data['stage'] : 'new';
-        $stageId = DB::table('lead_pipeline_stages')->where('lead_pipeline_id', $pipelineId)->where('code', $stageCode)->value('id') ?? 1;
+        $sourceName = $data['source'] ?? 'Direct';
+        $sourceId = $this->resolveSource($sourceName);
+
+        // Route to the segment's pipeline + first stage (unknown source → default
+        // pipeline 1 / 'new'). An explicit `stage` wins only if that code exists on the
+        // resolved pipeline (segment pipelines use segment-specific stage codes).
+        $route = PipelineResolver::forSource($sourceName);
+        $pipelineId = $route['pipeline_id'];
+        $stageId = $route['stage_id'];
+        $stageCode = $route['stage_code'];
+
+        if (! empty($data['stage'])) {
+            $overrideId = PipelineResolver::stageId($pipelineId, $data['stage']);
+            if ($overrideId) {
+                $stageId = $overrideId;
+                $stageCode = $data['stage'];
+            }
+        }
 
         // ---- Person (resolve by email → linkedin → name+company, else create) ----
         $personAttrs = [];
@@ -158,9 +173,13 @@ class OutreachApiController extends Controller
             $update = array_merge($leadAttrs, ['entity_type' => 'leads']);
             $codes = array_keys($leadAttrs);
 
-            // Only move the stage forward if the caller explicitly passed one.
-            if (! empty($data['stage']) && in_array($data['stage'], $this->validStages, true)) {
-                $update['lead_pipeline_stage_id'] = $stageId;
+            // Move the stage only if the caller passed one that exists on THIS lead's
+            // pipeline (never silently move the lead to a different pipeline on upsert).
+            if (! empty($data['stage'])) {
+                $moveId = PipelineResolver::stageId((int) $lead->lead_pipeline_id, $data['stage']);
+                if ($moveId) {
+                    $update['lead_pipeline_stage_id'] = $moveId;
+                }
             }
 
             if ($codes || isset($update['lead_pipeline_stage_id'])) {
@@ -230,10 +249,11 @@ class OutreachApiController extends Controller
 
         $activity->leads()->attach($lead->id);
 
-        // Optional stage change.
+        // Optional stage change — resolved against THIS lead's pipeline, so both the
+        // default funnel codes and segment-specific codes work.
         $newStage = null;
-        if (! empty($data['set_stage']) && in_array($data['set_stage'], $this->validStages, true)) {
-            $stageId = DB::table('lead_pipeline_stages')->where('lead_pipeline_id', $lead->lead_pipeline_id)->where('code', $data['set_stage'])->value('id');
+        if (! empty($data['set_stage'])) {
+            $stageId = PipelineResolver::stageId((int) $lead->lead_pipeline_id, $data['set_stage']);
             if ($stageId) {
                 $leadRepository->update(['entity_type' => 'leads', 'lead_pipeline_stage_id' => $stageId], $lead->id);
                 $newStage = $data['set_stage'];

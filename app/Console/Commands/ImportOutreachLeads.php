@@ -97,13 +97,22 @@ class ImportOutreachLeads extends Command
             return self::FAILURE;
         }
 
-        $sourceId = $this->resolveSource($this->option('source') ?: 'Direct');
+        $sourceName = $this->option('source') ?: 'Direct';
+        $sourceId = $this->resolveSource($sourceName);
         $typeId = (int) $this->option('type');
-        $pipelineId = (int) $this->option('pipeline');
-        $stageId = DB::table('lead_pipeline_stages')
-            ->where('lead_pipeline_id', $pipelineId)
-            ->where('code', $this->option('stage'))
-            ->value('id') ?? 1;
+
+        // Route to the segment's pipeline + first stage (unknown source → default
+        // pipeline 1 / 'new'). An explicit --stage wins only if it exists on that pipeline.
+        $route = \App\Support\PipelineResolver::forSource($sourceName);
+        $pipelineId = $route['pipeline_id'];
+        $stageId = $route['stage_id'];
+
+        if ($this->option('stage')) {
+            $overrideId = \App\Support\PipelineResolver::stageId($pipelineId, $this->option('stage'));
+            if ($overrideId) {
+                $stageId = $overrideId;
+            }
+        }
 
         $dryRun = (bool) $this->option('dry-run');
 

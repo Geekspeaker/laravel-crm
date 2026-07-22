@@ -13,6 +13,33 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 
 ## 2026-07-18
 
+### GTM upgrade Phase 2 (routing) — per-segment pipelines + source routing
+Spec: `.kiro/specs/crm-gtm-upgrade`.
+- **New migration** `2026_07_18_120000_seed_segment_pipelines.php`: seeds 4 GTM pipelines
+  (VC / Investors, HR / Work-Edu, Publishers, Brand / Offer-wall) + their segment-specific
+  stages, and the `Publisher` lead source. Idempotent (`insertOrIgnore` on unique
+  name / code+pipeline) — safe under boot `migrate --force`; default pipeline 1 + existing
+  leads untouched.
+- **`app/Support/PipelineResolver.php`**: `source → {pipeline, first stage}` (unknown →
+  default pipeline 1 / `new`). Reused by the write API + importer (both previously hardcoded
+  pipeline 1).
+- **`OutreachApiController`**: upsert routes by `source`; explicit `stage`/`set_stage`
+  applies only if the code exists on the resolved / lead's pipeline (no more generic-only
+  gate). Update path resolves stage against the lead's own pipeline (never moves pipeline
+  on upsert).
+- **`ImportOutreachLeads`**: routes by `--source` via the resolver.
+- **`skimify:reassign-pipelines`** (`--dry-run`): backfills existing leads onto their
+  segment pipeline; preserves won/lost; non-destructive.
+- Steering `crm-outreach-api.md` updated with the per-segment stage codes (generic codes
+  now apply to the default pipeline only).
+- **Collateral seed** (`2026_07_18_130000_seed_collateral_products.php`): seeds the send
+  assets per segment (VC deck; Publisher deck + Publisher Value report; HR one-pager; EDU
+  deck; Offer-wall one-pager) as products (idempotent by sku), attachable to a lead via the
+  existing lead↔product relation.
+- **Proposals** framing: the Quotes module is relabeled to "Proposals" (Phase 1); proposals
+  are built per-lead from the Collateral line items + free-form terms. Rich per-segment
+  quote templates deferred (not needed yet).
+
 ### GTM upgrade Phase 1 — declutter (`menu.php`, admin `en` lang)
 Spec: `.kiro/specs/crm-gtm-upgrade` (see `spec-log.md`).
 - **Hid Warehouse** from the nav (removed the `settings.inventory` +

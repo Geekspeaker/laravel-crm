@@ -95,9 +95,9 @@ class FlagStaleLeads extends Command
         }
 
         return (int) DB::table('tags')->insertGetId([
-            'name'       => 'stale',
-            'color'      => '#857D94',
-            'user_id'    => $userId,
+            'name' => 'stale',
+            'color' => '#857D94',
+            'user_id' => $userId,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

@@ -20,3 +20,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('inbound-emails:process')->everyFiveMinutes();
+
+// GTM upgrade Phase 3 (3.7): tag open leads with no activity for 14+ days as "stale".
+Schedule::command('skimify:flag-stale-leads')->dailyAt('09:00');

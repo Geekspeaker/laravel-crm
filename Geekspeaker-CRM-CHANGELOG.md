@@ -26,7 +26,13 @@ Spec: `.kiro/specs/crm-gtm-upgrade`.
 - **Starter tags** seeded (`2026_07_18_150000_seed_starter_tags.php`): warm-intro, inbound,
   met-at-event, portfolio-fit, champion, decision-maker (idempotent by name; owner = first
   user).
-- Still pending in Phase 3: WebForm inbound capture (3.5/3.6) + Automation rules (3.7–3.9).
+- **Stale-lead nudge** (`skimify:flag-stale-leads`, scheduled daily 09:00): tags open leads
+  (not won/lost) with no activity for N days (default 14) as `stale` so they resurface.
+  Idempotent; time-based so it's a scheduled command, not a workflow. `--days`, `--dry-run`.
+- Still pending in Phase 3: WebForm inbound capture (3.5/3.6) + stage-on-reply / auto-assign
+  (3.8/3.9). WebForm needs a source/pipeline column + submit-controller routing (the native
+  `web_forms` table has no source/pipeline field); auto-assign is largely covered already
+  (API/importer/UI creation all set an owner) and pairs with WebForm.
 
 ### GTM upgrade Phase 2 (routing) — per-segment pipelines + source routing
 Spec: `.kiro/specs/crm-gtm-upgrade`.

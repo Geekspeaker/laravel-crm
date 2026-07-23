@@ -13,6 +13,11 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 
 ## 2026-07-18
 
+### "Champion Engaged" stage added to the Brand / Offer-wall pipeline
+- `2026_07_18_170000_add_champion_stage_to_brand.php`: inserts a `champion` ("Champion
+  Engaged") stage right before "Terms" (Prospect → Cold Email/Call → Champion Engaged →
+  Terms → …). Anchored on the `terms` position; idempotent.
+
 ### "Cold Email / Call" stage added to every segment pipeline
 - `2026_07_18_160000_add_cold_outreach_stage.php`: inserts a `cold_outreach` ("Cold Email /
   Call") stage at position 2 in each of the 4 segment pipelines (after Sourced/Identified/

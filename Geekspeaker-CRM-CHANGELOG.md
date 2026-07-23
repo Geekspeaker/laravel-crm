@@ -13,6 +13,15 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 
 ## 2026-07-18
 
+### "Cold Email / Call" stage added to every segment pipeline
+- `2026_07_18_160000_add_cold_outreach_stage.php`: inserts a `cold_outreach` ("Cold Email /
+  Call") stage at position 2 in each of the 4 segment pipelines (after Sourced/Identified/
+  Prospect), shifting later stages up. Idempotent (skips a pipeline that already has it).
+- Stage-on-reply updated: a reply now advances a lead at/before the cold-outreach stage
+  (Sourced or Cold Email/Call) straight to the next "engaged" stage — so cold outreach is
+  tracked but a reply still jumps the lead forward. Falls back to first→next where a
+  pipeline has no cold_outreach stage.
+
 ### GTM upgrade Phase 3 (partial) — segment fields + tags
 Spec: `.kiro/specs/crm-gtm-upgrade`.
 - **New attributes** (`2026_07_18_140000_add_segment_v2_attributes.php`): `warm_intro_path`

@@ -218,18 +218,27 @@ class WebklexImapEmailProcessor implements InboundEmailProcessor
                     ->where('id', $lead->lead_pipeline_stage_id)
                     ->value('sort_order');
 
-                $firstOrder = DB::table('lead_pipeline_stages')
+                $firstOrder = (int) DB::table('lead_pipeline_stages')
                     ->where('lead_pipeline_id', $lead->lead_pipeline_id)
                     ->min('sort_order');
 
-                // Only advance a lead that's still at the very first stage.
-                if ($currentOrder === null || (int) $currentOrder !== (int) $firstOrder) {
+                // "Engaged threshold" = the cold-outreach stage if the pipeline has one,
+                // else the first stage. A reply advances a lead at/before this threshold
+                // (Sourced or Cold Email/Call) to the next ("engaged") stage — and leaves
+                // already-engaged leads alone. Idempotent, never backward.
+                $coldOrder = DB::table('lead_pipeline_stages')
+                    ->where('lead_pipeline_id', $lead->lead_pipeline_id)
+                    ->where('code', 'cold_outreach')
+                    ->value('sort_order');
+                $threshold = $coldOrder !== null ? (int) $coldOrder : $firstOrder;
+
+                if ($currentOrder === null || (int) $currentOrder > $threshold) {
                     continue;
                 }
 
                 $nextId = DB::table('lead_pipeline_stages')
                     ->where('lead_pipeline_id', $lead->lead_pipeline_id)
-                    ->where('sort_order', '>', $firstOrder)
+                    ->where('sort_order', '>', $threshold)
                     ->orderBy('sort_order')
                     ->value('id');
 

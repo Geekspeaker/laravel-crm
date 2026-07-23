@@ -40,10 +40,10 @@ return new class extends Migration
                 ->increment('sort_order');
 
             DB::table('lead_pipeline_stages')->insert([
-                'code'             => 'cold_outreach',
-                'name'             => 'Cold Email / Call',
-                'probability'      => 15,
-                'sort_order'       => 2,
+                'code' => 'cold_outreach',
+                'name' => 'Cold Email / Call',
+                'probability' => 15,
+                'sort_order' => 2,
                 'lead_pipeline_id' => $pipelineId,
             ]);
         }

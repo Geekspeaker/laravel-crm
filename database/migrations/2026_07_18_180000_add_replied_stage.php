@@ -54,10 +54,10 @@ return new class extends Migration
                 ->increment('sort_order');
 
             DB::table('lead_pipeline_stages')->insert([
-                'code'             => 'replied',
-                'name'             => 'Replied / Engaged',
-                'probability'      => 30,
-                'sort_order'       => $insertAt,
+                'code' => 'replied',
+                'name' => 'Replied / Engaged',
+                'probability' => 30,
+                'sort_order' => $insertAt,
                 'lead_pipeline_id' => $pipelineId,
             ]);
         }

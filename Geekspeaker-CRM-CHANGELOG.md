@@ -13,6 +13,17 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 
 ## 2026-07-18
 
+### "Replied / Engaged" stage (all pipelines) + Publisher `contacted` retired
+- `2026_07_18_180000_add_replied_stage.php`: inserts a `replied` ("Replied / Engaged") stage
+  immediately after Cold Email / Call in all 4 segment pipelines. Fills the real funnel gap —
+  they responded, nothing booked yet — so a reply no longer has to land on a sourcing stage
+  (VC "Warm Intro") or jump straight to First Call. Idempotent.
+- Retires the Publisher pipeline's redundant `contacted` stage (Cold Email/Call +
+  Replied/Engaged cover it). **Leads on it are moved to Cold Email/Call first** — the stage FK
+  is ON DELETE SET NULL, so deleting without migrating would blank their stage.
+- Stage-on-reply now targets the `replied` stage explicitly, falling back to "next stage by
+  order" for pipelines without it (e.g. the default pipeline).
+
 ### "Champion Engaged" stage added to the Brand / Offer-wall pipeline
 - `2026_07_18_170000_add_champion_stage_to_brand.php`: inserts a `champion` ("Champion
   Engaged") stage right before "Terms" (Prospect → Cold Email/Call → Champion Engaged →

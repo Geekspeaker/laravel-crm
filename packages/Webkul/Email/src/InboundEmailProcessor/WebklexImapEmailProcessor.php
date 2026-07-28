@@ -224,8 +224,8 @@ class WebklexImapEmailProcessor implements InboundEmailProcessor
 
                 // "Engaged threshold" = the cold-outreach stage if the pipeline has one,
                 // else the first stage. A reply advances a lead at/before this threshold
-                // (Sourced or Cold Email/Call) to the next ("engaged") stage — and leaves
-                // already-engaged leads alone. Idempotent, never backward.
+                // (Sourced or Cold Email/Call) — and leaves already-engaged leads alone.
+                // Idempotent, never backward.
                 $coldOrder = DB::table('lead_pipeline_stages')
                     ->where('lead_pipeline_id', $lead->lead_pipeline_id)
                     ->where('code', 'cold_outreach')
@@ -236,11 +236,17 @@ class WebklexImapEmailProcessor implements InboundEmailProcessor
                     continue;
                 }
 
+                // Target the explicit "Replied / Engaged" stage; fall back to the next
+                // stage by order for pipelines that don't have it (e.g. the default one).
                 $nextId = DB::table('lead_pipeline_stages')
                     ->where('lead_pipeline_id', $lead->lead_pipeline_id)
-                    ->where('sort_order', '>', $threshold)
-                    ->orderBy('sort_order')
-                    ->value('id');
+                    ->where('code', 'replied')
+                    ->value('id')
+                    ?: DB::table('lead_pipeline_stages')
+                        ->where('lead_pipeline_id', $lead->lead_pipeline_id)
+                        ->where('sort_order', '>', $threshold)
+                        ->orderBy('sort_order')
+                        ->value('id');
 
                 if ($nextId) {
                     DB::table('leads')->where('id', $lead->id)->update([

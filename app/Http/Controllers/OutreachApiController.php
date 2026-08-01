@@ -308,13 +308,13 @@ class OutreachApiController extends Controller
         }
 
         $person = Person::create([
-            'name'            => $name,
-            'emails'          => [],
+            'name' => $name,
+            'emails' => [],
             'contact_numbers' => [],
-            'job_title'       => $title ?: null,
+            'job_title' => $title ?: null,
             'organization_id' => $organizationId,
-            'user_id'         => $ownerId ?: null,
-            'unique_id'       => $this->syntheticUniqueId($linkedin, $name, $company),
+            'user_id' => $ownerId ?: null,
+            'unique_id' => $this->syntheticUniqueId($linkedin, $name, $company),
         ]);
 
         // Save the person's custom attributes (linkedin, x_handle, website, alt_emails)
@@ -322,7 +322,7 @@ class OutreachApiController extends Controller
         if ($personAttrs) {
             app(AttributeValueRepository::class)->save(array_merge($personAttrs, [
                 'entity_type' => 'persons',
-                'entity_id'   => $person->id,
+                'entity_id' => $person->id,
             ]));
         }
 

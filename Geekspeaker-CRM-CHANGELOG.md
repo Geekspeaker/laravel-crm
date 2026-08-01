@@ -13,6 +13,21 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 
 ## 2026-07-18
 
+### FIX: `/leads/upsert` 500 on the second email-less (LinkedIn-only) contact
+- **Root cause:** `persons.unique_id` is UNIQUE, and `PersonRepository::sanitizeRequestedPersonData()`
+  builds it from `user_id|organization_id|emails[0].value` **before** `create()` resolves
+  `organization_name` into an id. With no email and no org id yet, every email-less person
+  got the same `unique_id` (just the owner id). The first LinkedIn-only contact claimed it;
+  every later one hit a duplicate-key error → 500.
+- **Fix:** the email-less path now inserts the Person directly with a deterministic
+  `unique_id` (`li:<linkedin-slug>`, else `nc:<md5(name|company)>`), pre-resolving the
+  organization, then saves custom attributes through `AttributeValueRepository` exactly as
+  the repository would. The email path is unchanged. **No placeholder/`.invalid` emails** —
+  LinkedIn-only contacts stay honest.
+- Workaround no longer needed: contacts previously logged with a `.invalid` placeholder email
+  can be cleaned up (edit the person and clear the email).
+
+
 ### "Replied / Engaged" stage (all pipelines) + Publisher `contacted` retired
 - `2026_07_18_180000_add_replied_stage.php`: inserts a `replied` ("Replied / Engaged") stage
   immediately after Cold Email / Call in all 4 segment pipelines. Fills the real funnel gap —

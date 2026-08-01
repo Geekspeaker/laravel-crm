@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Webkul\Activity\Repositories\ActivityRepository;
+use Webkul\Attribute\Repositories\AttributeValueRepository;
 use Webkul\Contact\Models\Person;
 use Webkul\Contact\Repositories\PersonRepository;
 use Webkul\Lead\Models\Lead;
@@ -102,14 +103,26 @@ class OutreachApiController extends Controller
         if (! $person) {
             $matchedBy = 'created';
 
-            $person = $personRepository->create(array_filter(array_merge([
-                'name' => $name,
-                'emails' => $hasEmail ? [['value' => $email, 'label' => 'work']] : [],
-                'job_title' => $title ?: null,
-                'organization_name' => $company ?: null,
-                'user_id' => $ownerId,
-                'entity_type' => 'persons',
-            ], $personAttrs), fn ($v) => ! is_null($v)));
+            if ($hasEmail) {
+                $person = $personRepository->create(array_filter(array_merge([
+                    'name' => $name,
+                    'emails' => [['value' => $email, 'label' => 'work']],
+                    'job_title' => $title ?: null,
+                    'organization_name' => $company ?: null,
+                    'user_id' => $ownerId,
+                    'entity_type' => 'persons',
+                ], $personAttrs), fn ($v) => ! is_null($v)));
+            } else {
+                // No email: we must set `unique_id` ourselves. PersonRepository derives it
+                // from user_id|organization_id|emails[0] — but it does so BEFORE resolving
+                // organization_name, so every email-less person would get the same
+                // unique_id ("<ownerId>") and the UNIQUE index would 500 on the second
+                // LinkedIn-only contact. Insert directly with a deterministic id instead
+                // (never fabricate a placeholder email).
+                $person = $this->createPersonWithoutEmail(
+                    $personRepository, $name, $title, $company, $linkedin, $ownerId, $personAttrs
+                );
+            }
         } else {
             // Preserve existing emails; backfill a primary email onto a contact we
             // first met LinkedIn-only. Never wipe what's already there.
@@ -269,6 +282,65 @@ class OutreachApiController extends Controller
             'lead_id' => $lead->id,
             'stage' => $newStage,
         ]);
+    }
+
+    /**
+     * Create a Person that has no email address (LinkedIn-only contact).
+     *
+     * Bypasses PersonRepository::create() only for the `unique_id` problem described at
+     * the call site: it computes unique_id before organization_name is resolved, so all
+     * email-less people collide on the UNIQUE index. We insert with a deterministic id
+     * derived from the LinkedIn slug (or name+company), then persist custom attributes
+     * through the same repository the rest of the app uses.
+     */
+    private function createPersonWithoutEmail(
+        PersonRepository $personRepository,
+        string $name,
+        string $title,
+        string $company,
+        string $linkedin,
+        $ownerId,
+        array $personAttrs
+    ): Person {
+        $organizationId = null;
+        if ($company !== '') {
+            $organizationId = $personRepository->fetchOrCreateOrganizationByName($company)->id;
+        }
+
+        $person = Person::create([
+            'name'            => $name,
+            'emails'          => [],
+            'contact_numbers' => [],
+            'job_title'       => $title ?: null,
+            'organization_id' => $organizationId,
+            'user_id'         => $ownerId ?: null,
+            'unique_id'       => $this->syntheticUniqueId($linkedin, $name, $company),
+        ]);
+
+        // Save the person's custom attributes (linkedin, x_handle, website, alt_emails)
+        // exactly as PersonRepository::create() would.
+        if ($personAttrs) {
+            app(AttributeValueRepository::class)->save(array_merge($personAttrs, [
+                'entity_type' => 'persons',
+                'entity_id'   => $person->id,
+            ]));
+        }
+
+        return $person;
+    }
+
+    /**
+     * Deterministic, collision-free `unique_id` for an email-less person: the LinkedIn
+     * vanity slug when we have one, else a hash of name+company. Deterministic so the
+     * same contact never yields two ids (and resolvePerson would match them first).
+     */
+    private function syntheticUniqueId(string $linkedin, string $name, string $company): string
+    {
+        if (trim($linkedin) !== '') {
+            return 'li:'.$this->linkedinSlug($this->normalizeLinkedin($linkedin));
+        }
+
+        return 'nc:'.md5(strtolower(trim($name)).'|'.strtolower(trim($company)));
     }
 
     /**

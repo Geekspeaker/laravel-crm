@@ -136,4 +136,11 @@ php artisan schedule:work >/dev/null 2>&1 &
 echo "[entrypoint] Starting queue worker..."
 php artisan queue:work --sleep=3 --tries=1 --timeout=180 >/dev/null 2>&1 &
 
-exec php artisan serve --host=0.0.0.0 --port=8000
+# Serve via PHP built-in server through our own router (serve-router.php): the
+# same mechanism as `php artisan serve`, but with a router we control so the
+# /storage guard survives `composer install`. serve-router.php returns 403 for any
+# PHP-family file under /storage, blocking the upload-to-web-shell path
+# (CVE-2026-38526 and the other Krayin upload CVEs) behind the per-endpoint upload
+# validation. "-t public" sets the static docroot exactly as artisan serve does.
+# Single-process (no PHP_CLI_SERVER_WORKERS) to match previous behaviour.
+exec php -S 0.0.0.0:8000 -t public /app/serve-router.php

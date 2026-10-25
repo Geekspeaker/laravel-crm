@@ -5,7 +5,8 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 `/app/storage` volume). Running list — newest at top.
 
 > Deploy model: **pushing this repo triggers a Northflank rebuild/redeploy.** The
-> container runs `php artisan serve` only (no queue worker, no scheduler).
+> container runs the app via `php -S` through our own `serve-router.php` (see
+> `docker-entrypoint.sh`), alongside a background queue worker and scheduler.
 > Runtime config comes from Northflank env vars, written into `.env` at boot by
 > `docker-entrypoint.sh`.
 
@@ -25,6 +26,24 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 - A redeploy replaces the container, which restarts every PHP process (web server, queue worker,
   scheduler) on the patched binary.
 - Verify: `curl -sI https://crm.geekspeaker.com/admin/login` shows `x-powered-by: PHP/8.3.36`.
+
+### SECURITY: TinyMCE upload RCE (CVE-2026-38526) + /storage PHP-execution block
+- Krayin `/admin/tinymce/upload` (editor image upload) stored files under the **client-supplied
+  extension** on the public disk. Since the app is served by PHP built-in web server (which
+  executes any `.php` on disk) and uploads are web-reachable under `/storage`, an authenticated
+  user could upload `x.php` and get a web shell (remote code execution).
+- `TinyMCEController::storeMedia()` now validates the upload is a real raster image by its
+  **sniffed MIME type** (`mimetypes:` rule) and derives the stored extension from that type, never
+  from the filename, so a script cannot be written there regardless of its name. SVG is no longer
+  accepted via this endpoint: its sanitiser keyed off the client filename (bypassable); reference an
+  SVG by URL instead.
+- Defence in depth: the app now serves via `php -S ... -t public /app/serve-router.php` instead of
+  `php artisan serve`. `serve-router.php` is the built-in-server router minus the framework vendored
+  one (which `composer install` would overwrite), and it returns **403 for any PHP-family file under
+  `/storage`** (`.php`, `.phtml`, `.phar`, ...). This also backstops the other Krayin upload
+  endpoints (e.g. email attachments, CVE-2026-36340).
+- Verify: `curl -s -o /dev/null -w "%{http_code}" https://crm.geekspeaker.com/storage/probe.php`
+  returns **403**; the login page still returns 200 and static assets still load.
 
 ---
 

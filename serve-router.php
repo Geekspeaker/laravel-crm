@@ -17,6 +17,8 @@
  * upload directory is not. Upload endpoints also validate content; this is
  * defence in depth.
  */
+
+// Invoked by `php -S ... -t public serve-router.php` from docker-entrypoint.sh.
 $uri = urldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
 
 if (preg_match('#^/storage/.*\.(?:php|phtml|phar|php\d|pht|phps)(?:$|/)#i', $uri)) {

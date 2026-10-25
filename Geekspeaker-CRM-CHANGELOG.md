@@ -11,6 +11,23 @@ Geekspeaker outreach CRM (deployed on Northflank: app service + managed MySQL +
 
 ---
 
+## 2026-10-25
+
+### SECURITY: PHP2Shell (CVE-2026-109618 / CVE-2026-109619), PHP 8.3.33 → 8.3.36
+- The container ran **PHP 8.3.33** (`x-powered-by` on the live site), built 2026-08-01 from the
+  floating `php:8.3-cli` tag. PHP2Shell is a pair of unauthenticated RCEs in PHP's request
+  handling, fixed in PHP's 2026-10-21 security release (8.3.36 on this branch). PHP states no
+  `.ini` change fully mitigates it; updating is the only fix.
+- `Dockerfile`: pinned `FROM php:8.3.36-cli`, plus a build-time guard that fails the build if
+  `PHP_VERSION < 8.3.36`, so a cached or stale base can never ship again.
+- Swapped `libfreetype6-dev` → `libfreetype-dev` (present on both Debian bookworm and trixie) so
+  the rebuild cannot fail on a renamed package.
+- A redeploy replaces the container, which restarts every PHP process (web server, queue worker,
+  scheduler) on the patched binary.
+- Verify: `curl -sI https://crm.geekspeaker.com/admin/login` shows `x-powered-by: PHP/8.3.36`.
+
+---
+
 ## 2026-07-18
 
 ### FIX: `/leads/upsert` 500 on the second email-less (LinkedIn-only) contact

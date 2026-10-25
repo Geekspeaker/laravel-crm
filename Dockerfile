@@ -1,11 +1,20 @@
 # Krayin CRM — Dockerfile for Northflank (commit at repo ROOT as `Dockerfile`)
 # Build type = Dockerfile · location /Dockerfile · context / · service Port = 8000
 
-FROM php:8.3-cli
+# Pinned to an exact patch release. 8.3.36 fixes PHP2Shell (CVE-2026-109618 and
+# CVE-2026-109619, PHP security release of 2026-10-21). The old floating `8.3-cli`
+# tag shipped 8.3.33 and could resolve to a cached image on the builder, so bump
+# this pin deliberately when PHP ships the next security release.
+FROM php:8.3.36-cli
+
+# Refuse to build on a PHP that is still exposed to PHP2Shell.
+RUN php -r 'if (version_compare(PHP_VERSION, "8.3.36", "<")) { fwrite(STDERR, "PHP ".PHP_VERSION." is exposed to PHP2Shell (CVE-2026-109618/109619); need >= 8.3.36\n"); exit(1); }'
 
 # System deps + PHP extensions Krayin needs (incl. calendar), + Node 20 for the asset build.
+# libfreetype-dev (not the old libfreetype6-dev transitional name) exists on both
+# Debian bookworm and trixie, so the build works whichever base the tag points at.
 RUN apt-get update && apt-get install -y \
-      git unzip libzip-dev libpng-dev libjpeg-dev libfreetype6-dev \
+      git unzip libzip-dev libpng-dev libjpeg-dev libfreetype-dev \
       libonig-dev libicu-dev libxml2-dev default-mysql-client curl gnupg \
  && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
  && apt-get install -y nodejs \
